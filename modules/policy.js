@@ -1,54 +1,52 @@
-export class Policy {
+import { Draggable } from './draggable.js';
+
+const titleMaxWidth = 150;
+const policyWidth = 150;
+export const policyHeight = 30;
+const charWidth = 6;
+
+export class Policy extends Draggable {
 	wasMoved = false;
 
-	constructor(paper, data, position) {
+	constructor(paper, position, data) {
+		super();
 		this.paper = paper;
-		this.data = data;
 		this.position = position
+		this.data = data;
 	}
 
 	clone() {
-		new Policy(this.paper, this.data, this.position).render();
+		return new Policy(this.paper, this.position, this.data).render();
 	}
 
-	dragger() {
+	startDragging() {
 		if (!this.wasMoved) {
-			this.policy.clone();
+			this.container.policy.clone();
 			this.wasMoved = true;
 		}
-		this.policy.group.toFront();
-		this.previousDx = 0;
-		this.previousDy = 0;
+		super.startDragging();
 	}
 
-	move(dx, dy) {
-		var txGroup = dx - this.previousDx;
-		var tyGroup = dy - this.previousDy;
-
-		this.policy.group.translate(txGroup, tyGroup);
-
-		this.previousDx = dx;
-		this.previousDy = dy;
-	}
-
-	up() {}
-
-    addToGroup(group, elements) {
-    	elements.forEach(element => {
-    		element.policy = this;
+    _splitTitle(text) {
+    	return text.split(' ').reduce((result, chunk, index) => {
+    		if (!index) return chunk;
+    		let width = (result.length + chunk.length) * charWidth;
+    		return result + (width > titleMaxWidth ? '\n' : ' ') + chunk;
     	});
-    	group.push(...elements);
     }
 
 	render() {
 		this.group = this.paper.set();
-		let rect = this.paper.rect(this.position.x, this.position.y, 100, 30).attr({
-		    fill: '#EEE',
-		    stroke: '#000',
-		    cursor: 'move',
-		});
-		let text = this.paper.text(this.position.x + 20, this.position.y + 10, this.data.name);
-		this.addToGroup(this.group, [rect, text]);
-		this.group.drag(this.move, this.dragger, this.up);
+		let rect = this.paper.rect(this.position.x, this.position.y, policyWidth, policyHeight)
+			.attr({
+		    	fill: '#EEE',
+		    	stroke: '#000'
+			});
+		let text = this.paper.text(this.position.x + 5, this.position.y + policyHeight / 2, this._splitTitle(this.data.name))
+			.attr({'text-anchor': 'start'});
+
+		this.group.push(rect, text);
+		this.group.policy = this;
+		this.makeDraggable(this.group, [rect, text]);
 	}
 }
