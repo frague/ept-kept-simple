@@ -1,4 +1,5 @@
 import { Draggable } from './draggable.js';
+import { ConnectionPoint } from './connection_point.js';
 
 const titleMaxWidth = 150;
 const policyWidth = 150;
@@ -7,6 +8,8 @@ const charWidth = 6;
 
 export class Policy extends Draggable {
 	wasMoved = false;
+
+	connectionPoint = null;
 
 	constructor(paper, position, data) {
 		super();
@@ -20,11 +23,30 @@ export class Policy extends Draggable {
 	}
 
 	startDragging() {
-		if (!this.wasMoved) {
-			this.container.policy.clone();
-			this.wasMoved = true;
+		let policy = this.container.entity;
+		if (!policy.wasMoved) {
+			policy.clone();
+			policy.wasMoved = true;
+			policy.connectionPoint = new ConnectionPoint(
+				policy.paper,
+				{x: policy.position.x + policyWidth - 10, y: policy.position.y + 10
+			});
+			policy.group.push(policy.connectionPoint.render());
 		}
 		super.startDragging();
+	}
+
+	move(dx, dy) {
+		super.move(dx, dy);
+		let policy = this.container.entity;
+		if (policy.connectionPoint) {
+			policy.connectionPoint.render();
+		}
+	}
+
+	updatePosition(dx, dy) {
+		super.updatePosition(dx, dy);
+		if (this.connectionPoint) this.connectionPoint.updatePosition(dx, dy);
 	}
 
     _splitTitle(text) {
@@ -36,14 +58,17 @@ export class Policy extends Draggable {
     }
 
 	render() {
+		let {x, y} = this.position;
 		this.group = this.paper.set();
-		let rect = this.paper.rect(this.position.x, this.position.y, policyWidth, policyHeight)
+		let rect = this.paper.rect(x, y, policyWidth, policyHeight)
 			.attr({
-		    	fill: '#EEE',
-		    	stroke: '#000'
+		    	'fill': '#EEE',
+		    	'stroke': '#000'
 			});
-		let text = this.paper.text(this.position.x + 5, this.position.y + policyHeight / 2, this._splitTitle(this.data.name))
-			.attr({'text-anchor': 'start'});
+		let text = this.paper.text(x + 5, y + policyHeight / 2, this._splitTitle(this.data.name))
+			.attr({
+				'text-anchor': 'start'
+			});
 
 		this.group.push(rect, text);
 		this.group.policy = this;

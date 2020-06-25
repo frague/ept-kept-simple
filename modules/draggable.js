@@ -9,13 +9,20 @@ export class Draggable {
 	}
 
 	move(dx, dy) {
-		var txGroup = dx - this.previousDx;
-		var tyGroup = dy - this.previousDy;
+		var tx = dx - this.previousDx;
+		var ty = dy - this.previousDy;
 
-		this.container.translate(txGroup, tyGroup);
+		this.container.translate(tx, ty);
 
 		this.previousDx = dx;
 		this.previousDy = dy;
+
+		let entity = this.container.entity;
+		entity.updatePosition(tx, ty);
+	}
+
+	updatePosition(dx, dy) {
+		this.position = {x: this.position.x + dx, y: this.position.y + dy};
 	}
 
 	drop() {}
@@ -23,8 +30,11 @@ export class Draggable {
 	makeDraggable(element, siblings=[]) {
 		[element, ...siblings].forEach(el => {
 			el.container = element;
-			el.attr({cursor: 'move'});
+			el.attr({
+				'cursor': 'move'
+			});
 		});
+		element.entity = this;
 		element.drag(this.move, this.startDragging, this.drop);
 	}
 }

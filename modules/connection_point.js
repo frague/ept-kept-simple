@@ -1,9 +1,15 @@
 import { Draggable } from './draggable.js';
+import { storage } from './storage.js';
+import { Link } from './link.js';
+
+export const radius = 6;
 
 export class ConnectionPoint extends Draggable {
 	isStatic = true;
 	color = '000';
-	radius = 10;
+
+	connectionCandidate = null;
+	circle = null;
 	link = null;
 
 	constructor(paper, position, isStatic=true) {
@@ -11,6 +17,19 @@ export class ConnectionPoint extends Draggable {
 		this.paper = paper;
 		this.position = position
 		this.isStatic = isStatic;
+
+		let cp = storage.get('connection_points', []);
+		cp.push(this);
+		storage.set('connection_points', cp);
+	}
+
+	destructor() {
+		let cp = storage.get('connection_points', []);
+		let i = cp.indexOf(this);
+		if (i >= 0) {
+			cp.splice(i, 1)
+			storage.set('connection_points', cp);
+		}
 	}
 	
 	clone() {
@@ -19,46 +38,74 @@ export class ConnectionPoint extends Draggable {
 
 	startDragging() {
 		let source = this.origin.clone();
-		let {cx, cy} = source.attrs;
-		this.link = {
-			source: source,
-			destination: this,
-			curve: this.paper.path(`M${cx} ${cy}T${this.attrs.cx} ${this.attrs.cy}`)
-		};
+		this.origin.link = new Link(this.paper, source.origin, this.origin);
+		this.origin.link.render();
 		super.startDragging();
 	}
 
 	move(dx, dy) {
 		super.move(dx, dy);
-		if (this.link && this.link.curve) {
-			let {cx, cy} = this.link.source.attrs;
-			let l = Math.sqrt(dx * dx + dy * dy);
-			let k = l ? this.origin.radius / l : 1;
-			let sx = cx + dx - dx * k;
-			let sy = cy + dy - dy * k;
-			if (cx != sx || cy != sy) {
-				this.link.curve.attr({
-					'path': `M${cx} ${cy}T${sx} ${sy}`,
-					'arrow-end': 'classic-wide-long',
-					'stroke-width': 2
-				});
+		this.origin.link.render();
+		this.origin.getConnectionCandidate();
+		this.attr({
+			'fill': origin.connectionCandidate ? '#F00' : '#888'
+		});
+	}
+
+	getConnectionCandidate() {
+		this.connectionCandidate = null;
+		let from = this.link.from;
+		storage.get('connection_points', []).forEach(cp => {
+			if (cp !== this && cp !== from && cp.checkApproach(this.position, 30)) {
+				this.connectionCandidate = cp;
 			}
-		}
+		});
+	}
+
+	checkApproach(position, threshold, color='#F00') {
+		let {dx, dy} = this.circle._;
+		dx = this.position.x - position.x;
+		dy = this.position.y - position.y;
+		let distance = Math.sqrt(dx * dx + dy * dy);
+		let isClose = distance <= threshold;
+		this.circle.attr({
+			'fill': isClose ? color : '#000'
+		});
+		return isClose;
 	}
 
 	drop() {
-		this.link.curve.remove();
+		let origin = this.origin;
+		origin.destructor();
+
+		let cc = origin.connectionCandidate;
+		if (cc) {
+			origin.link.to = cc;
+			cc.link = origin.link;
+			cc.color = '#FFF';
+			cc.render();
+			origin.link.render();
+		} else {
+			origin.link.curve.remove();
+		}
 		this.remove();
 		delete this.origin;
 	}
 
 	render() {
-		let circle = this.paper.circle(this.position.x, this.position.y, this.radius)
-			.attr({fill: this.color});
-		circle.origin = this;
-		if (!this.isStatic) {
-			this.makeDraggable(circle);
+		if (!this.circle) {
+			this.circle = this.paper.circle(this.position.x, this.position.y, radius);
+			this.circle.origin = this;
+			if (!this.isStatic) {
+				this.makeDraggable(this.circle);
+			}
 		}
-		return circle;
+		this.circle.attr({
+			'fill': this.color
+		});
+		if (this.link) {
+			this.link.render();
+		}
+		return this.circle;
 	}
 }
