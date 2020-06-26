@@ -5,8 +5,6 @@ export class Link {
 		from.link = this;
 		to.link = this;
 
-		console.log(from, to);
-
 		this.paper = paper;
 		this.from = from;
 		this.to = to;
@@ -17,10 +15,10 @@ export class Link {
 		if (this.curve) {
 			this.curve.remove();
 		}
-		if (this.from) {
+		if (this.from && this.from === this) {
 			this.from.link = null;
 		}
-		if (this.to) {
+		if (this.to && this.to === this) {
 			this.to.link = null;
 		}
 		delete this;

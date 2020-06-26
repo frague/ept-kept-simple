@@ -38,15 +38,16 @@ export class ConnectionPoint extends Draggable {
 
 	startDragging() {
 		let origin = this.origin;
-		let source = origin.clone();
-		source.render();
-
-		console.log(origin.link);
 		if (origin.link) {
 			origin.link.destructor();
 		}
-		console.log(source, 111);
-		new Link(this.paper, source, origin).render();
+
+		let source = origin.clone();
+		source.render();
+
+		let l = new Link(this.paper, source, origin);
+		l.render();
+		
 		super.startDragging();
 	}
 
@@ -84,21 +85,15 @@ export class ConnectionPoint extends Draggable {
 	drop() {
 		let origin = this.origin;
 		origin.destructor();
+		origin.link.destructor();
 
 		let cc = origin.connectionCandidate;
 		if (cc) {
-			let l = new Link(origin.paper, origin.link.from, cc).render();
-			l.attr({
-				fill: 'red'
-			});
-			// origin.link.to = cc;
-			// cc.link = origin.link;
+			let l = new Link(origin.paper, origin.link.from, cc);
+			l.render();
 			cc.color = '#FFF';
 			cc.render();
-			// origin.link.render();
-			// cc.link.from.link = origin.link;
 		}
-		origin.link.destructor();
 		this.remove();
 		delete this.origin;
 	}
