@@ -56,6 +56,10 @@ export class ConnectionPoint extends Positioned {
 		return isClose;
 	}
 
+	isLinked() {
+		return this.linkedWith.some(entity => entity instanceof Link);
+	}
+
 	_getColor() {
 		return this.type;
 	}
@@ -116,7 +120,11 @@ class Linker extends Draggable {
 	getConnectionCandidate() {
 		this.connectionCandidate = null;
 		storage.get('connection_points', []).forEach(cp => {
-			if (cp !== this.starter && this.starter.type !== cp.type && cp.checkApproach(this.position, 30)) {
+			if (cp !== this.starter
+				&& this.starter.type !== cp.type
+				&& !cp.isLinked()
+				&& cp.checkApproach(this.position, 30)
+			) {
 				this.connectionCandidate = cp;
 			}
 		});
