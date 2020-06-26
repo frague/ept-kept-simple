@@ -19,13 +19,13 @@ export class Policy extends Draggable {
 	}
 
 	clone() {
-		return new Policy(this.paper, this.position, this.data).render();
+		return new Policy(this.paper, this.position, this.data);
 	}
 
 	startDragging() {
 		let policy = this.container.entity;
 		if (!policy.wasMoved) {
-			policy.clone();
+			policy.clone().render();
 			policy.wasMoved = true;
 			policy.connectionPoint = new ConnectionPoint(
 				policy.paper,

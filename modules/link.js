@@ -2,10 +2,28 @@ import { radius } from './connection_point.js';
 
 export class Link {
 	constructor(paper, from, to) {
+		from.link = this;
+		to.link = this;
+
+		console.log(from, to);
+
 		this.paper = paper;
 		this.from = from;
 		this.to = to;
 		this.curve = null;
+	}
+
+	destructor() {
+		if (this.curve) {
+			this.curve.remove();
+		}
+		if (this.from) {
+			this.from.link = null;
+		}
+		if (this.to) {
+			this.to.link = null;
+		}
+		delete this;
 	}
 
 	_calcTo() {
@@ -16,11 +34,11 @@ export class Link {
 		let k = l ? radius / l : 1;
 		let sx = x + dx - dx * k;
 		let sy = y + dy - dy * k;
-		return `T ${sx} ${sy}`;
+		return ` T ${sx} ${sy}`;
 	}
 
 	render() {
-		let path = `M ${this.from.position.x} ${this.from.position.y} ${this._calcTo()}`;
+		let path = `M ${this.from.position.x} ${this.from.position.y}${this._calcTo()}`;
 		if (this.curve) {
 			this.curve.attr({ path });
 		} else {
