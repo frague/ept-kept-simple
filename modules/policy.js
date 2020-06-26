@@ -1,5 +1,5 @@
 import { Draggable } from './draggable.js';
-import { ConnectionPoint } from './connection_point.js';
+import { ConnectionPoint, connectionPointTypes } from './connection_point.js';
 
 const titleMaxWidth = 150;
 const policyWidth = 150;
@@ -12,9 +12,8 @@ export class Policy extends Draggable {
 	connectionPoint = null;
 
 	constructor(paper, position, data) {
-		super();
+		super(position);
 		this.paper = paper;
-		this.position = position
 		this.data = data;
 	}
 
@@ -29,9 +28,12 @@ export class Policy extends Draggable {
 			policy.wasMoved = true;
 			policy.connectionPoint = new ConnectionPoint(
 				policy.paper,
-				{x: policy.position.x + policyWidth - 10, y: policy.position.y + 10
-			});
+				{x: policy.position.x + policyWidth - 10, y: policy.position.y + 10},
+				connectionPointTypes.in,
+				true
+			);
 			policy.group.push(policy.connectionPoint.render());
+			policy.linkWith(policy.connectionPoint);
 		}
 		super.startDragging();
 	}
@@ -39,9 +41,9 @@ export class Policy extends Draggable {
 	move(dx, dy) {
 		super.move(dx, dy);
 		let policy = this.container.entity;
-		if (policy.connectionPoint) {
-			policy.connectionPoint.render();
-		}
+		// if (policy.connectionPoint) {
+		// 	policy.connectionPoint.render();
+		// }
 	}
 
 	updatePosition(dx, dy) {
@@ -73,5 +75,7 @@ export class Policy extends Draggable {
 		this.group.push(rect, text);
 		this.group.policy = this;
 		this.makeDraggable(this.group, [rect, text]);
+		super.render();
+		return this.group;
 	}
 }

@@ -2,8 +2,8 @@ import { radius } from './connection_point.js';
 
 export class Link {
 	constructor(paper, from, to) {
-		from.link = this;
-		to.link = this;
+		from.linkWith(this);
+		to.linkWith(this);
 
 		this.paper = paper;
 		this.from = from;
@@ -15,11 +15,11 @@ export class Link {
 		if (this.curve) {
 			this.curve.remove();
 		}
-		if (this.from && this.from === this) {
-			this.from.link = null;
+		if (this.from) {
+			this.from.unlink(this);
 		}
-		if (this.to && this.to === this) {
-			this.to.link = null;
+		if (this.to) {
+			this.to.unlink(this);
 		}
 		delete this;
 	}

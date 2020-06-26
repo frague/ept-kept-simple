@@ -3,20 +3,26 @@ import { storage } from './storage.js';
 import { Link } from './link.js';
 
 export const radius = 6;
+export const connectionPointTypes = {
+	'any': '#FFF',
+	'in': '#0F0',
+	'out': '#F00'
+};
 
 export class ConnectionPoint extends Draggable {
 	isStatic = true;
-	color = '000';
+	isApproached = false;
 
 	connectionCandidate = null;
 	circle = null;
 	link = null;
 
-	constructor(paper, position, isStatic=true) {
-		super();
+	constructor(paper, position, type=connectionPointTypes.any, isStatic=false, isMulti=false) {
+		super(position);
 		this.paper = paper;
-		this.position = position
+		this.type = type;
 		this.isStatic = isStatic;
+		this.isMulti = isMulti;
 
 		let cp = storage.get('connection_points', []);
 		cp.push(this);
@@ -30,72 +36,75 @@ export class ConnectionPoint extends Draggable {
 			cp.splice(i, 1)
 			storage.set('connection_points', cp);
 		}
+		this.linkedWith.forEach(entity => entity.destructor());
+		delete this;
 	}
 	
 	clone() {
-		return new ConnectionPoint(this.paper, this.position, this.isStatic);
+		return new ConnectionPoint(this.paper, this.position, this.type, this.isStatic, this.isMulti);
 	}
 
 	startDragging() {
 		let origin = this.origin;
-		if (origin.link) {
-			origin.link.destructor();
+		if (!origin.isMulti) {
+			origin.linkedWith.forEach(entity => {
+				if (entity instanceof Link) {
+					entity.destructor();
+				}
+			});
 		}
 
-		let source = origin.clone();
-		source.render();
+		this.start = origin.clone();
+		this.start.render();
 
-		let l = new Link(this.paper, source, origin);
-		l.render();
+		let isOutgoing = this.type != connectionPointTypes.in;
+		new Link(this.paper, isOutgoing ? this.start : origin, isOutgoing ? origin : this.start).render();
 		
 		super.startDragging();
 	}
 
 	move(dx, dy) {
 		super.move(dx, dy);
-		this.origin.link.render();
 		this.origin.getConnectionCandidate();
-		this.attr({
-			'fill': origin.connectionCandidate ? '#F00' : '#888'
-		});
 	}
 
 	getConnectionCandidate() {
 		this.connectionCandidate = null;
-		let from = this.link.from;
 		storage.get('connection_points', []).forEach(cp => {
-			if (cp !== this && cp !== from && cp.checkApproach(this.position, 30)) {
+			if (cp !== this && this.type !== cp.type && cp.checkApproach(this.position, 30)) {
 				this.connectionCandidate = cp;
 			}
 		});
 	}
 
-	checkApproach(position, threshold, color='#F00') {
+	checkApproach(position, threshold) {
 		let {dx, dy} = this.circle._;
 		dx = this.position.x - position.x;
 		dy = this.position.y - position.y;
 		let distance = Math.sqrt(dx * dx + dy * dy);
 		let isClose = distance <= threshold;
-		this.circle.attr({
-			'fill': isClose ? color : '#000'
-		});
+		this.isApproached = isClose;
+		this.render();
 		return isClose;
 	}
 
 	drop() {
 		let origin = this.origin;
-		origin.destructor();
-		origin.link.destructor();
 
-		let cc = origin.connectionCandidate;
-		if (cc) {
-			let l = new Link(origin.paper, origin.link.from, cc);
-			l.render();
-			cc.color = '#FFF';
-			cc.render();
+		let connection = origin.connectionCandidate;
+		if (connection) {
+			let isIncoming = connection.type === connectionPointTypes.in;
+			new Link(origin.paper, isIncoming ? this.start : connection, isIncoming ? connection : this.start).render();
+			connection.isApproached = false;
+			connection.render();
 		}
+
 		this.remove();
-		delete this.origin;
+		origin.destructor();
+	}
+
+	_getColor() {
+		return this.type;
 	}
 
 	render() {
@@ -107,11 +116,15 @@ export class ConnectionPoint extends Draggable {
 			}
 		}
 		this.circle.attr({
-			'fill': this.color
+			'stroke': this.isApproached ? 'orange' : '#000',
+			'stroke-width': this.isApproached ? 2 : 1,
+			'fill': this._getColor()
 		});
+
 		if (this.link) {
 			this.link.render();
 		}
+		super.render();
 		return this.circle;
 	}
 }

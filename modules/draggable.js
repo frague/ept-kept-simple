@@ -1,11 +1,26 @@
-export class Draggable {
-	constructor() {
+import { Positioned } from './base.js';
+
+export class Draggable extends Positioned {
+	linkedWith = [];
+
+	constructor(position) {
+		super(position);
 	}
 
 	startDragging() {
 		this.container.toFront();
 		this.previousDx = 0;
 		this.previousDy = 0;
+	}
+
+	linkWith(entity) {
+		let index = this.linkedWith.indexOf(entity);
+		if (index < 0) this.linkedWith.push(entity);
+	}
+
+	unlink(entity) {
+		let index = this.linkedWith.indexOf(entity);
+		if (index >= 0) this.linkedWith.splice(index, 1);
 	}
 
 	move(dx, dy) {
@@ -19,10 +34,8 @@ export class Draggable {
 
 		let entity = this.container.entity;
 		entity.updatePosition(tx, ty);
-	}
 
-	updatePosition(dx, dy) {
-		this.position = {x: this.position.x + dx, y: this.position.y + dy};
+		entity.linkedWith.forEach(entity => entity.render());
 	}
 
 	drop() {}
@@ -36,5 +49,9 @@ export class Draggable {
 		});
 		element.entity = this;
 		element.drag(this.move, this.startDragging, this.drop);
+	}
+
+	render() {
+		this.linkedWith.forEach(entity => entity.render());
 	}
 }
