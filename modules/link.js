@@ -37,15 +37,15 @@ export class Link {
 
 	render() {
 		let path = `M ${this.from.position.x} ${this.from.position.y}${this._calcTo()}`;
-		if (this.curve) {
-			this.curve.attr({ path });
-		} else {
-			this.curve = this.paper.path(path)
-				.attr({
-					'arrow-end': 'classic-wide-long',
-					'stroke-width': 3
-				});
+		if (!this.curve) {
+			this.curve = this.paper.path(path);
 		}
+		this.curve.attr({
+			'path': path,
+			// 'stroke-dasharray': '--',
+			'stroke-width': 3,
+			'arrow-end': 'classic-wide-long'
+		});
 		this.curve.toFront();
 		return this.curve;
 	}

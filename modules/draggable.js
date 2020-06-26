@@ -1,8 +1,6 @@
 import { Positioned } from './base.js';
 
 export class Draggable extends Positioned {
-	linkedWith = [];
-
 	constructor(position) {
 		super(position);
 	}
@@ -11,16 +9,6 @@ export class Draggable extends Positioned {
 		this.container.toFront();
 		this.previousDx = 0;
 		this.previousDy = 0;
-	}
-
-	linkWith(entity) {
-		let index = this.linkedWith.indexOf(entity);
-		if (index < 0) this.linkedWith.push(entity);
-	}
-
-	unlink(entity) {
-		let index = this.linkedWith.indexOf(entity);
-		if (index >= 0) this.linkedWith.splice(index, 1);
 	}
 
 	move(dx, dy) {
@@ -49,9 +37,5 @@ export class Draggable extends Positioned {
 		});
 		element.entity = this;
 		element.drag(this.move, this.startDragging, this.drop);
-	}
-
-	render() {
-		this.linkedWith.forEach(entity => entity.render());
 	}
 }

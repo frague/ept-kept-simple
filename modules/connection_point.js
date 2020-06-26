@@ -1,3 +1,4 @@
+import { Positioned } from './base.js';
 import { Draggable } from './draggable.js';
 import { storage } from './storage.js';
 import { Link } from './link.js';
@@ -9,7 +10,7 @@ export const connectionPointTypes = {
 	'out': '#F00'
 };
 
-export class ConnectionPoint extends Draggable {
+export class ConnectionPoint extends Positioned {
 	isStatic = true;
 	isApproached = false;
 
@@ -44,43 +45,10 @@ export class ConnectionPoint extends Draggable {
 		return new ConnectionPoint(this.paper, this.position, this.type, this.isStatic, this.isMulti);
 	}
 
-	startDragging() {
-		let origin = this.origin;
-		if (!origin.isMulti) {
-			origin.linkedWith.forEach(entity => {
-				if (entity instanceof Link) {
-					entity.destructor();
-				}
-			});
-		}
-
-		this.start = origin.clone();
-		this.start.render();
-
-		let isOutgoing = this.type != connectionPointTypes.in;
-		new Link(this.paper, isOutgoing ? this.start : origin, isOutgoing ? origin : this.start).render();
-		
-		super.startDragging();
-	}
-
-	move(dx, dy) {
-		super.move(dx, dy);
-		this.origin.getConnectionCandidate();
-	}
-
-	getConnectionCandidate() {
-		this.connectionCandidate = null;
-		storage.get('connection_points', []).forEach(cp => {
-			if (cp !== this && this.type !== cp.type && cp.checkApproach(this.position, 30)) {
-				this.connectionCandidate = cp;
-			}
-		});
-	}
-
 	checkApproach(position, threshold) {
-		let {dx, dy} = this.circle._;
-		dx = this.position.x - position.x;
-		dy = this.position.y - position.y;
+		let {x, y} = this.position;
+		let dx = x - position.x;
+		let dy = y - position.y;
 		let distance = Math.sqrt(dx * dx + dy * dy);
 		let isClose = distance <= threshold;
 		this.isApproached = isClose;
@@ -88,43 +56,97 @@ export class ConnectionPoint extends Draggable {
 		return isClose;
 	}
 
-	drop() {
-		let origin = this.origin;
-
-		let connection = origin.connectionCandidate;
-		if (connection) {
-			let isIncoming = connection.type === connectionPointTypes.in;
-			new Link(origin.paper, isIncoming ? this.start : connection, isIncoming ? connection : this.start).render();
-			connection.isApproached = false;
-			connection.render();
-		}
-
-		this.remove();
-		origin.destructor();
-	}
-
 	_getColor() {
 		return this.type;
 	}
 
 	render() {
-		if (!this.circle) {
-			this.circle = this.paper.circle(this.position.x, this.position.y, radius);
-			this.circle.origin = this;
-			if (!this.isStatic) {
-				this.makeDraggable(this.circle);
-			}
+		if (!this.wasTouched) {
+			this.group = this.paper.set();
+			this.base = this.paper.circle(this.position.x, this.position.y, radius)
+				.attr({
+					fill: '#888'
+				});
+			this.linker = new Linker(this.paper, this.position, this);
+			let l = this.linker.render();
+			
+			this.group.push(this.base, l);
+			
 		}
-		this.circle.attr({
+		this.base.attr({
 			'stroke': this.isApproached ? 'orange' : '#000',
 			'stroke-width': this.isApproached ? 2 : 1,
 			'fill': this._getColor()
 		});
 
-		if (this.link) {
-			this.link.render();
-		}
 		super.render();
+		return this.group;
+	}
+}
+
+class Linker extends Draggable {
+	constructor(paper, position, starter) {
+		super(position);
+		this.paper = paper;
+		this.starter = starter;
+	}
+
+	startDragging() {
+		let starter = this.entity.starter;
+		if (!starter.isMulti) {
+			starter.linkedWith.forEach(entity => {
+				if (entity instanceof Link) {
+					entity.destructor();
+				}
+			});
+		}
+
+		let isOutgoing = starter.type != connectionPointTypes.in;
+		this.tempLink = new Link(this.paper, isOutgoing ? starter : this.entity, isOutgoing ? this.entity : starter);
+		this.tempLink.render().attr({stroke: '#888'});
+		
+		super.startDragging();
+	}
+
+	move(dx, dy) {
+		super.move(dx, dy);
+		this.entity.getConnectionCandidate();
+	}
+
+	getConnectionCandidate() {
+		this.connectionCandidate = null;
+		storage.get('connection_points', []).forEach(cp => {
+			if (cp !== this.starter && this.starter.type !== cp.type && cp.checkApproach(this.position, 30)) {
+				this.connectionCandidate = cp;
+			}
+		});
+	}
+
+	drop() {
+		let entity = this.entity;
+		this.tempLink.destructor();
+
+		let connection = entity.connectionCandidate;
+		if (connection) {
+			let isIncoming = connection.type === connectionPointTypes.in;
+			new Link(entity.paper, isIncoming ? entity.starter : connection, isIncoming ? connection : entity.starter).render();
+			connection.isApproached = false;
+			connection.render();
+		}
+
+		entity.position = entity.starter.position;
+		this.transform('');
+		entity.render();
+	}
+
+	render() {
+		if (!this.wasTouched) {
+			this.circle = this.paper.circle(this.position.x, this.position.y, radius - 2)
+				.attr({
+					fill: 'rgba(0,0,0,0.5)'
+				});
+			this.makeDraggable(this.circle);
+		}
 		return this.circle;
 	}
 }

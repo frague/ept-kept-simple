@@ -28,7 +28,7 @@ export class Policy extends Draggable {
 			policy.wasMoved = true;
 			policy.connectionPoint = new ConnectionPoint(
 				policy.paper,
-				{x: policy.position.x + policyWidth - 10, y: policy.position.y + 10},
+				{x: policy.position.x + policyWidth / 2, y: policy.position.y},
 				connectionPointTypes.in,
 				true
 			);
@@ -41,14 +41,16 @@ export class Policy extends Draggable {
 	move(dx, dy) {
 		super.move(dx, dy);
 		let policy = this.container.entity;
-		// if (policy.connectionPoint) {
-		// 	policy.connectionPoint.render();
-		// }
+		if (policy.ConnectionPoint) {
+			policy.ConnectionPoint.render();
+		}
 	}
 
 	updatePosition(dx, dy) {
 		super.updatePosition(dx, dy);
-		if (this.connectionPoint) this.connectionPoint.updatePosition(dx, dy);
+		if (this.connectionPoint) {
+			this.connectionPoint.updatePosition(dx, dy);
+		}
 	}
 
     _splitTitle(text) {
@@ -60,21 +62,22 @@ export class Policy extends Draggable {
     }
 
 	render() {
-		let {x, y} = this.position;
-		this.group = this.paper.set();
-		let rect = this.paper.rect(x, y, policyWidth, policyHeight)
-			.attr({
-		    	'fill': '#EEE',
-		    	'stroke': '#000'
-			});
-		let text = this.paper.text(x + 5, y + policyHeight / 2, this._splitTitle(this.data.name))
-			.attr({
-				'text-anchor': 'start'
-			});
+		if (!this.wasTouched) {
+			let {x, y} = this.position;
+			this.group = this.paper.set();
+			let rect = this.paper.rect(x, y, policyWidth, policyHeight)
+				.attr({
+			    	'fill': '#EEE',
+			    	'stroke': '#000'
+				});
+			let text = this.paper.text(x + 5, y + policyHeight / 2, this._splitTitle(this.data.name))
+				.attr({
+					'text-anchor': 'start'
+				});
 
-		this.group.push(rect, text);
-		this.group.policy = this;
-		this.makeDraggable(this.group, [rect, text]);
+			this.group.push(rect, text);
+			this.makeDraggable(this.group, [rect, text]);
+		}
 		super.render();
 		return this.group;
 	}
