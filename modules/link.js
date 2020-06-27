@@ -38,12 +38,22 @@ export class Link {
 	render() {
 		let path = `M ${this.from.position.x} ${this.from.position.y}${this._calcTo()}`;
 		if (!this.curve) {
-			this.curve = this.paper.path(path);
+			let curve = this.paper.path(path);
+			curve
+				.mouseover(() => {
+					curve.attr('stroke', 'red');
+				})
+				.mouseout(() => {
+					curve.attr('stroke', '#000');
+				})
+				.click(() => {
+					this.destructor();
+				})
+			this.curve = curve;
 		}
 		this.curve.attr({
 			'path': path,
-			// 'stroke-dasharray': '--',
-			'stroke-width': 3,
+			'stroke-width': 2,
 			'arrow-end': 'classic-wide-long'
 		});
 		this.curve.toFront();
