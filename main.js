@@ -1,6 +1,6 @@
 import { etp } from './modules/data.js';
 import { Policy, policyHeight } from './modules/policy.js';
-import { ConnectionPoint, connectionPointTypes } from './modules/connection_point.js';
+import { ConnectionPoint, connectionPointTypes, radius } from './modules/connection_point.js';
 import { storage } from './modules/storage.js';
 
 storage.set('connection_points', []);
@@ -16,4 +16,5 @@ window.onload = () => {
 	});
 
 	new ConnectionPoint(paper, {x: canvasWidth / 2, y: 20}, connectionPointTypes.out, false, true).render();
+	paper.text(canvasWidth / 2 + radius + 15, 20, 'Start');
 };
