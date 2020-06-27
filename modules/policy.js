@@ -18,6 +18,11 @@ export class Policy extends Draggable {
 		this.data = data;
 	}
 
+	destructor() {
+		this.group.remove();
+		delete this;
+	}
+
 	clone() {
 		return new Policy(this.paper, this.position, this.data);
 	}
@@ -72,7 +77,7 @@ export class Policy extends Draggable {
 			    	'fill': '#EEE',
 			    	'stroke': '#000'
 				});
-			let text = this.paper.text(x + 5, y + policyHeight / 2, this._splitTitle(this.data.name))
+			let text = this.paper.text(x + 5, y + policyHeight / 2, this._splitTitle(this.data.label))
 				.attr({
 					'text-anchor': 'start'
 				});

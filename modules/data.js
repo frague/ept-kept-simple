@@ -1,23 +1,14 @@
 export var etp = [
 	{
-		"name": "VLAN Untagged\nvlan_id=100"
+		'label': 'Subinterface'
 	},
 	{
-		"name": "Subinterface\nvlan_id=100"
+		'label': 'Address type'
 	},
 	{
-		"name": "Subinterface\nvlan_id=200"
+		'label': 'BGP unnumbered'
 	},
 	{
-		"name": "BGP unnumbered"
-	},
-	{
-		"name": "Address type: unnumbered"
-	},
-	{
-		"name": "Routing policy 100"
-	},
-	{
-		"name": "Routing policy 200"
+		'label': 'Routing policy'
 	},
 ]
