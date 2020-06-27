@@ -5,7 +5,6 @@ import { Link } from './link.js';
 
 export const radius = 6;
 export const connectionPointTypes = {
-	'any': '#FFF',
 	'in': '#0F0',
 	'out': '#F00'
 };
@@ -16,7 +15,7 @@ export class ConnectionPoint extends Positioned {
 
 	connectionCandidate = null;
 	circle = null;
-	link = null;
+	linker = null;
 
 	constructor(paper, position, type=connectionPointTypes.any, isStatic=false, isMulti=false) {
 		super(position);
@@ -64,6 +63,13 @@ export class ConnectionPoint extends Positioned {
 		return this.type;
 	}
 
+	updatePosition(dx, dy) {
+		super.updatePosition(dx, dy);
+		if (this.linker) {
+			this.linker.updatePosition(dx, dy);
+		}
+	}
+
 	render() {
 		if (!this.wasTouched) {
 			this.group = this.paper.set();
@@ -71,11 +77,11 @@ export class ConnectionPoint extends Positioned {
 				.attr({
 					fill: '#888'
 				});
-			this.linker = new Linker(this.paper, this.position, this);
-			let l = this.linker.render();
-			
-			this.group.push(this.base, l);
-			
+			this.group.push(this.base);
+			if (!this.isStatic) {
+				this.linker = new Linker(this.paper, this.position, this);
+				this.group.push(this.linker.render());
+			}
 		}
 		this.base.attr({
 			'stroke': this.isApproached ? 'orange' : '#000',
@@ -108,7 +114,10 @@ class Linker extends Draggable {
 		let isOutgoing = starter.type != connectionPointTypes.in;
 		this.tempLink = new Link(this.paper, isOutgoing ? starter : this.entity, isOutgoing ? this.entity : starter);
 		this.tempLink.render().attr({stroke: '#888'});
-		
+
+		this.oldX = this.entity.position.x;
+		this.oldY = this.entity.position.y;
+
 		super.startDragging();
 	}
 
@@ -142,8 +151,9 @@ class Linker extends Draggable {
 			connection.render();
 		}
 
+		let {x, y} = entity.position;
+		this.translate(this.oldX - x, this.oldY - y);
 		entity.position = entity.starter.position;
-		this.transform('');
 		entity.render();
 	}
 
@@ -153,8 +163,10 @@ class Linker extends Draggable {
 				.attr({
 					fill: 'rgba(0,0,0,0.5)'
 				});
+			this.circle.toFront();	
 			this.makeDraggable(this.circle);
 		}
+		super.render();
 		return this.circle;
 	}
 }

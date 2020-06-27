@@ -9,7 +9,8 @@ const charWidth = 6;
 export class Policy extends Draggable {
 	wasMoved = false;
 
-	connectionPoint = null;
+	input = null;
+	output = null;
 
 	constructor(paper, position, data) {
 		super(position);
@@ -21,35 +22,36 @@ export class Policy extends Draggable {
 		return new Policy(this.paper, this.position, this.data);
 	}
 
+	addConnectionPoint(y, type, isStatic, isMulti) {
+		let point = new ConnectionPoint(
+			this.paper,
+			{x: this.position.x + policyWidth / 2, y},
+			type,
+			isStatic,
+			isMulti
+		);
+		this.group.push(point.render());
+		this.linkWith(point);
+		return point;
+	}
+
 	startDragging() {
 		let policy = this.container.entity;
 		if (!policy.wasMoved) {
 			policy.clone().render();
 			policy.wasMoved = true;
-			policy.connectionPoint = new ConnectionPoint(
-				policy.paper,
-				{x: policy.position.x + policyWidth / 2, y: policy.position.y},
-				connectionPointTypes.in,
-				true
-			);
-			policy.group.push(policy.connectionPoint.render());
-			policy.linkWith(policy.connectionPoint);
+
+			policy.input = policy.addConnectionPoint(policy.position.y, connectionPointTypes.in, false, false);
+			policy.output = policy.addConnectionPoint(policy.position.y + policyHeight, connectionPointTypes.out, false, true);
 		}
 		super.startDragging();
 	}
 
-	move(dx, dy) {
-		super.move(dx, dy);
-		let policy = this.container.entity;
-		if (policy.ConnectionPoint) {
-			policy.ConnectionPoint.render();
-		}
-	}
-
 	updatePosition(dx, dy) {
 		super.updatePosition(dx, dy);
-		if (this.connectionPoint) {
-			this.connectionPoint.updatePosition(dx, dy);
+		if (this.input) {
+			this.input.updatePosition(dx, dy);
+			this.output.updatePosition(dx, dy);
 		}
 	}
 
