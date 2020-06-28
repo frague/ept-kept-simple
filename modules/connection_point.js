@@ -23,20 +23,10 @@ export class ConnectionPoint extends Positioned {
 		this.type = type;
 		this.isStatic = isStatic;
 		this.isMulti = isMulti;
-
-		let cp = storage.get('connection_points', []);
-		cp.push(this);
-		storage.set('connection_points', cp);
 	}
 
 	destructor() {
-		let cp = storage.get('connection_points', []);
-		let i = cp.indexOf(this);
-		if (i >= 0) {
-			cp.splice(i, 1)
-			storage.set('connection_points', cp);
-		}
-		// Link deletion affects this.linkedWith thus iterating by the cloned list
+		super.destructor();
 		Array.from(this.linkedWith).forEach(entity => entity.destructor());
 		delete this;
 	}
@@ -129,7 +119,7 @@ class Linker extends Draggable {
 
 	getConnectionCandidate() {
 		this.connectionCandidate = null;
-		storage.get('connection_points', []).forEach(cp => {
+		storage.get(ConnectionPoint.name, []).forEach(cp => {
 			if (cp !== this.starter
 				&& this.starter.type !== cp.type
 				&& !cp.isLinked()

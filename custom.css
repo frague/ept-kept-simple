@@ -5,6 +5,7 @@
 h1 {
 	padding: 0;
 	margin: 0 0 10px 0;
+	font-size: 20px;
 }
 
 #pane {
@@ -31,23 +32,29 @@ text {
 section#forms {
 	position: absolute;
 	left: 810px;
-	border: solid 1px #000;
-	min-width: 300px;
+	width: 300px;
 	min-height: 100px;
 	padding: 10px;
 	z-index: 100;
 }
 
 section#forms div {
-	margin-top: 4px;
+	margin-top: 10px;
 }
 
-section#forms label {
-	display: inline-block;
-	margin-right: 10px;
-	min-width: 100px;
+section#forms input {
+	width: 100%;
+	padding: 6px;
+}
+
+section#forms input#label {
+	width: 100%;
+	margin-bottom: 10px;
+	font-size: 20px;
 }
 
 section#forms button {
-	margin-top: 10px;
+	margin-top: 20px;
+	float: right;
+	padding: 6px;
 }

@@ -7,6 +7,13 @@ export const policyWidth = 150;
 export const policyHeight = 30;
 const charWidth = 6;
 
+export const policyTypes = {
+	'basic': '#DDF', 
+	'cloned': '#EEE', 
+	'new': '#DFD',
+	'reference': '#EFEFEF'
+};
+
 export const clonePolicy = policy => {
 	let clonedPolicy = Object.assign({}, policy);
 	clonedPolicy.parameters = Object.assign({}, policy.parameters);
@@ -15,7 +22,7 @@ export const clonePolicy = policy => {
 
 export class Policy extends Draggable {
 	wasMoved = false;
-	isCloned = false;
+	type = policyTypes.reference;
 	hasErrors = false;
 
 	input = null;
@@ -30,6 +37,7 @@ export class Policy extends Draggable {
 	}
 
 	destructor() {
+		super.destructor();
 		this.linkedWith.forEach(linked => linked.destructor());
 		this.group.remove();
 		delete this;
@@ -37,6 +45,10 @@ export class Policy extends Draggable {
 
 	clone() {
 		return new Policy(this.paper, this.position, this.data);
+	}
+
+	validatePolicyParameters(data) {
+		this.hasErrors = Object.keys(data.parameters || {}).some(parameter => !data.parameters[parameter]);
 	}
 
 	addConnectionPoint(y, type, isStatic, isMulti) {
@@ -50,10 +62,6 @@ export class Policy extends Draggable {
 		this.group.push(point.render());
 		this.linkWith(point);
 		return point;
-	}
-
-	validatePolicyParameters(data) {
-		this.hasErrors = Object.keys(data.parameters || {}).some(parameter => !data.parameters[parameter]);
 	}
 
 	addConnections() {
@@ -70,7 +78,7 @@ export class Policy extends Draggable {
 			this.paper.image('/images/settings.png', x + policyWidth - 30, y + 2, 12, 12)
 				.attr('cursor', 'hand')
 				.click(() => {
-					new PolicyForm(this.data, data => {
+					new PolicyForm(this, data => {
 						this.data = data;
 						this.validatePolicyParameters(data);
 						this.render();
@@ -83,9 +91,13 @@ export class Policy extends Draggable {
 	startDragging() {
 		let policy = this.container.entity;
 		if (!policy.wasMoved) {
-			policy.clone().render();
+			let np = policy.clone();
+			np.type = policy.type;
+			np.render();
+
 			policy.wasMoved = true;
 			policy.addConnections();
+			policy.type = policyTypes.reference;
 			policy.render();
 		}
 		super.startDragging();
@@ -108,7 +120,7 @@ export class Policy extends Draggable {
     }
 
     _determineColor() {
-    	let color = '#EEE';
+    	let color = this.type;
     	if (this.wasMoved) {
 	    	if (this.hasErrors) {
 	    		color = '#FAA';
@@ -121,7 +133,7 @@ export class Policy extends Draggable {
 		if (!this.wasTouched) {
 			let {x, y} = this.position;
 			this.group = this.paper.set();
-			if (this.isCloned) {
+			if (this.type === policyTypes.cloned) {
 				let cRect = this.paper.rect(x + 4, y + 4, policyWidth, policyHeight)
 				.attr({
 			    	'fill': '#DDD',
@@ -130,17 +142,14 @@ export class Policy extends Draggable {
 				this.group.push(cRect);
 			}
 			this.rect = this.paper.rect(x, y, policyWidth, policyHeight)
-				.attr({
-			    	'stroke': '#000'
-				});
-			let text = this.paper.text(x + 5, y + policyHeight / 2, this._splitTitle(this.data.label))
-				.attr({
-					'text-anchor': 'start'
-				});
-			this.group.push(this.rect, text);
+				.attr('stroke', '#000');
+			this.text = this.paper.text(x + 5, y + policyHeight / 2, this._splitTitle(this.data.label))
+				.attr('text-anchor', 'start');
+			this.group.push(this.rect, this.text);
 			this.makeDraggable(this.group);
 		}
 		this.rect.attr('fill', this._determineColor());
+		this.text.attr('text', this._splitTitle(this.data.label));
 		super.render();
 		return this.group;
 	}

@@ -1,4 +1,4 @@
-import { clonePolicy } from './policy.js';
+import { clonePolicy, policyTypes } from './policy.js';
 
 const placeholder = document.getElementById('forms');
 
@@ -6,9 +6,9 @@ export class PolicyForm {
 	constructor(policy, callback=() => {}) {
 		this.callback = callback;
 
-		this.policy = clonePolicy(policy);
+		this.policy = policy;
+		this.data = clonePolicy(policy.data);
 	}
-
 
 	_clear() {
 		placeholder.innerHTML = '';
@@ -16,7 +16,7 @@ export class PolicyForm {
 
 	_updateParameter(input) {
 		let {name, value} = input;
-		this.policy.parameters[name] = value;
+		this.data.parameters[name] = value;
 	}
 
 	_appendInput(name, value) {
@@ -25,14 +25,18 @@ export class PolicyForm {
 		let label = document.createElement('label');
 		label.htmlFor = name;
 		label.innerText = name;
-		div.appendChild(label);
 
 		let input = document.createElement('input');
 		input.id = name;
 		input.name = name;
 		input.value = value;
 		input.onchange = () => this._updateParameter(input);
-		div.appendChild(input);
+		if (value && ![policyTypes.cloned, policyTypes.new].includes(this.policy.type)) {
+			input.setAttribute('disabled', 'true');
+		}
+
+		label.appendChild(input);
+		div.appendChild(label);
 
 		placeholder.appendChild(div);
 	}
@@ -41,15 +45,23 @@ export class PolicyForm {
 		if (!placeholder) return;
 		this._clear();
 
-		let title = document.createElement('h1');
-		title.innerText = this.policy.label;
-		placeholder.appendChild(title);
+		if ([policyTypes.reference, policyTypes.basic].includes(this.policy.type)) {
+			let title = document.createElement('h1');
+			title.innerText = this.data.label;
+			placeholder.appendChild(title);
+		} else {
+			let title = document.createElement('input');
+			title.id = 'label';
+			title.value = this.data.label;
+			title.onchange = () => this.data.label = title.value;
+			placeholder.appendChild(title);
+		}
 
-		Object.keys(this.policy.parameters || {}).forEach(name => this._appendInput(name, this.policy.parameters[name]));
+		Object.keys(this.data.parameters || {}).forEach(name => this._appendInput(name, this.data.parameters[name]));
 
 		let commitButton = document.createElement('button');
 		commitButton.innerText = 'Commit Changes';
-		commitButton.onclick = () => this.callback(clonePolicy(this.policy));
+		commitButton.onclick = () => this.callback(clonePolicy(this.data));
 		placeholder.appendChild(commitButton);
 	}
 }
