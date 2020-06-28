@@ -1,3 +1,12 @@
+* {
+	font-family: Arial, Tahoma, Verdana;
+}
+
+h1 {
+	padding: 0;
+	margin: 0 0 10px 0;
+}
+
 #pane {
 	position: absolute;
 	top: 0px;
@@ -17,4 +26,28 @@
 
 text {
 	color: black;
+}
+
+section#forms {
+	position: absolute;
+	left: 810px;
+	border: solid 1px #000;
+	min-width: 300px;
+	min-height: 100px;
+	padding: 10px;
+	z-index: 100;
+}
+
+section#forms div {
+	margin-top: 4px;
+}
+
+section#forms label {
+	display: inline-block;
+	margin-right: 10px;
+	min-width: 100px;
+}
+
+section#forms button {
+	margin-top: 10px;
 }

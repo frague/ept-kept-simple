@@ -1,14 +1,22 @@
 import { Draggable } from './draggable.js';
 import { ConnectionPoint, connectionPointTypes } from './connection_point.js';
+import { PolicyForm } from './policy_form.js';
 
 const titleMaxWidth = 150;
 export const policyWidth = 150;
 export const policyHeight = 30;
 const charWidth = 6;
 
+export const clonePolicy = policy => {
+	let clonedPolicy = Object.assign({}, policy);
+	clonedPolicy.parameters = Object.assign({}, policy.parameters);
+	return clonedPolicy;
+}
+
 export class Policy extends Draggable {
 	wasMoved = false;
 	isCloned = false;
+	hasErrors = false;
 
 	input = null;
 	output = null;
@@ -16,7 +24,9 @@ export class Policy extends Draggable {
 	constructor(paper, position, data) {
 		super(position);
 		this.paper = paper;
-		this.data = data;
+
+		this.data = clonePolicy(data);
+		this.validatePolicyParameters(this.data);
 	}
 
 	destructor() {
@@ -42,23 +52,31 @@ export class Policy extends Draggable {
 		return point;
 	}
 
+	validatePolicyParameters(data) {
+		this.hasErrors = Object.keys(data.parameters || {}).some(parameter => !data.parameters[parameter]);
+		this.render();
+	}
+
 	addConnections() {
 		let {x, y} = this.position;
 		this.input = this.addConnectionPoint(y, connectionPointTypes.in, false, false);
 		this.output = this.addConnectionPoint(y + policyHeight, connectionPointTypes.out, false, true);
 
 		this.group.push(
-			this.paper.image(
-				'/images/delete.png',
-				x + policyWidth - 14,
-				y + 2,
-				12,
-				12
-			)
-			.attr('cursor', 'hand')
-			.click(() => {
-				this.destructor();
-			})
+			this.paper.image('/images/delete.png', x + policyWidth - 14, y + 2, 12, 12)
+				.attr('cursor', 'hand')
+				.click(() => {
+					this.destructor();
+				}),
+			this.paper.image('/images/settings.png', x + policyWidth - 30, y + 2, 12, 12)
+				.attr('cursor', 'hand')
+				.click(() => {
+					new PolicyForm(this.data, data => {
+						this.data = data;
+						this.validatePolicyParameters(data);
+					})
+						.render();
+				})
 		);
 	}
 
@@ -68,6 +86,7 @@ export class Policy extends Draggable {
 			policy.clone().render();
 			policy.wasMoved = true;
 			policy.addConnections();
+			policy.render();
 		}
 		super.startDragging();
 	}
@@ -88,6 +107,16 @@ export class Policy extends Draggable {
     	});
     }
 
+    _determineColor() {
+    	let color = '#EEE';
+    	if (this.wasMoved) {
+	    	if (this.hasErrors) {
+	    		color = '#FAA';
+	    	}
+    	}
+    	return color;
+    }
+
 	render() {
 		if (!this.wasTouched) {
 			let {x, y} = this.position;
@@ -100,18 +129,18 @@ export class Policy extends Draggable {
 				});
 				this.group.push(cRect);
 			}
-			let rect = this.paper.rect(x, y, policyWidth, policyHeight)
+			this.rect = this.paper.rect(x, y, policyWidth, policyHeight)
 				.attr({
-			    	'fill': '#EEE',
 			    	'stroke': '#000'
 				});
 			let text = this.paper.text(x + 5, y + policyHeight / 2, this._splitTitle(this.data.label))
 				.attr({
 					'text-anchor': 'start'
 				});
-			this.group.push(rect, text);
+			this.group.push(this.rect, text);
 			this.makeDraggable(this.group);
 		}
+		this.rect.attr('fill', this._determineColor());
 		super.render();
 		return this.group;
 	}
