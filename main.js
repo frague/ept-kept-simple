@@ -62,13 +62,4 @@ window.onload = () => {
 		storage.set('policiesRendered', policiesRendfered);
 	});
 	reRenderPolicies();
-
-	// paper.circle(etps.attrs.x + 10, 400, 10)
-	// 	.attr('fill', 'red')
-	// 	.click(() => {
-	// 		let p = storage.get('policies', []);
-	// 		p.push({label: `label${Math.random()}`});
-	// 		storage.set('policies', p);
-	// 		reRenderPolicies();
-	// 	})
 };

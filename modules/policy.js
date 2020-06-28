@@ -54,7 +54,6 @@ export class Policy extends Draggable {
 
 	validatePolicyParameters(data) {
 		this.hasErrors = Object.keys(data.parameters || {}).some(parameter => !data.parameters[parameter]);
-		this.render();
 	}
 
 	addConnections() {
@@ -74,6 +73,7 @@ export class Policy extends Draggable {
 					new PolicyForm(this.data, data => {
 						this.data = data;
 						this.validatePolicyParameters(data);
+						this.render();
 					})
 						.render();
 				})
