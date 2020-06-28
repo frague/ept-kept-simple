@@ -36,7 +36,8 @@ export class ConnectionPoint extends Positioned {
 			cp.splice(i, 1)
 			storage.set('connection_points', cp);
 		}
-		this.linkedWith.forEach(entity => entity.destructor());
+		// Link deletion affects this.linkedWith thus iterating by the cloned list
+		Array.from(this.linkedWith).forEach(entity => entity.destructor());
 		delete this;
 	}
 	

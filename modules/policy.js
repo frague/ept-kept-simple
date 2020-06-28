@@ -20,6 +20,7 @@ export class Policy extends Draggable {
 	}
 
 	destructor() {
+		this.linkedWith.forEach(linked => linked.destructor());
 		this.group.remove();
 		delete this;
 	}
@@ -42,8 +43,23 @@ export class Policy extends Draggable {
 	}
 
 	addConnections() {
-		this.input = this.addConnectionPoint(this.position.y, connectionPointTypes.in, false, false);
-		this.output = this.addConnectionPoint(this.position.y + policyHeight, connectionPointTypes.out, false, true);
+		let {x, y} = this.position;
+		this.input = this.addConnectionPoint(y, connectionPointTypes.in, false, false);
+		this.output = this.addConnectionPoint(y + policyHeight, connectionPointTypes.out, false, true);
+
+		this.group.push(
+			this.paper.image(
+				'/images/delete.png',
+				x + policyWidth - 14,
+				y + 2,
+				12,
+				12
+			)
+			.attr('cursor', 'hand')
+			.click(() => {
+				this.destructor();
+			})
+		);
 	}
 
 	startDragging() {
