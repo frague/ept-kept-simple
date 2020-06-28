@@ -1,9 +1,35 @@
 import { etp } from './modules/data.js';
-import { Policy, policyHeight } from './modules/policy.js';
+import { Policy, policyHeight, policyWidth } from './modules/policy.js';
 import { ConnectionPoint, connectionPointTypes, radius } from './modules/connection_point.js';
 import { storage } from './modules/storage.js';
 
 storage.set('connection_points', []);
+
+function reRenderPolicies() {
+	let renderPolicies = new CustomEvent('render_policies', {});
+	window.dispatchEvent(renderPolicies);
+}
+
+function makeCloneLink(paper, policy) {
+	let cloningPosition = {
+		x: policy.position.x - 20,
+		y: policy.position.y + 10,
+	};
+	let cloneLink = paper.text(policy.position.x + policyWidth + 20, policy.position.y + policyHeight / 2, 'Clone')
+		.attr({
+			'cursor': 'hand',
+			'fill': 'blue',
+		})
+		.click(() => {
+			let clonedPolicy = policy.clone();
+			clonedPolicy.position = cloningPosition;
+			clonedPolicy.isCloned = true;
+			clonedPolicy.wasMoved = true;
+			clonedPolicy.render();
+			clonedPolicy.addConnections();
+		});
+	policy.cloneLink = cloneLink;
+}
 
 window.onload = () => {
 	let paper = Raphael(0, 0, '100%', '100%');
@@ -22,26 +48,27 @@ window.onload = () => {
 
 	window.addEventListener('render_policies', (data) => {
 		let policiesRendfered = storage.get('policiesRendered', []);
-		policiesRendfered.forEach(policy => policy.destructor());
+		policiesRendfered.forEach(policy => {
+			policy.cloneLink.remove();
+			policy.destructor();
+		});
 
 		policiesRendfered = storage.get('policies', []).map((policy, index) => {
 			let p = new Policy(paper, {x: etps.attrs.x + 10, y: etps.attrs.y + 10 + index * (policyHeight + 4)}, policy);
 			p.render();
+			makeCloneLink(paper, p);
 			return p;
 		});
 		storage.set('policiesRendered', policiesRendfered);
 	});
-	let renderPolicies = new CustomEvent('render_policies', {});
-	window.dispatchEvent(renderPolicies);
+	reRenderPolicies();
 
-	paper.circle(etps.attrs.x + 10, 400, 10)
-		.attr('fill', 'red')
-		.click(() => {
-			let p = storage.get('policies', []);
-			p.push({label: `label${Math.random()}`});
-			storage.set('policies', p);
-
-			let renderPolicies = new CustomEvent('render_policies', {});
-			window.dispatchEvent(renderPolicies);
-		})
+	// paper.circle(etps.attrs.x + 10, 400, 10)
+	// 	.attr('fill', 'red')
+	// 	.click(() => {
+	// 		let p = storage.get('policies', []);
+	// 		p.push({label: `label${Math.random()}`});
+	// 		storage.set('policies', p);
+	// 		reRenderPolicies();
+	// 	})
 };

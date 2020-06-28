@@ -28,7 +28,8 @@ export class Draggable extends Positioned {
 
 	drop() {}
 
-	makeDraggable(element, siblings=[]) {
+	makeDraggable(element) {
+		let siblings = element.items || [];
 		[element, ...siblings].forEach(el => {
 			el.container = element;
 			el.attr({

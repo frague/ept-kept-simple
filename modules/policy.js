@@ -2,12 +2,13 @@ import { Draggable } from './draggable.js';
 import { ConnectionPoint, connectionPointTypes } from './connection_point.js';
 
 const titleMaxWidth = 150;
-const policyWidth = 150;
+export const policyWidth = 150;
 export const policyHeight = 30;
 const charWidth = 6;
 
 export class Policy extends Draggable {
 	wasMoved = false;
+	isCloned = false;
 
 	input = null;
 	output = null;
@@ -40,14 +41,17 @@ export class Policy extends Draggable {
 		return point;
 	}
 
+	addConnections() {
+		this.input = this.addConnectionPoint(this.position.y, connectionPointTypes.in, false, false);
+		this.output = this.addConnectionPoint(this.position.y + policyHeight, connectionPointTypes.out, false, true);
+	}
+
 	startDragging() {
 		let policy = this.container.entity;
 		if (!policy.wasMoved) {
 			policy.clone().render();
 			policy.wasMoved = true;
-
-			policy.input = policy.addConnectionPoint(policy.position.y, connectionPointTypes.in, false, false);
-			policy.output = policy.addConnectionPoint(policy.position.y + policyHeight, connectionPointTypes.out, false, true);
+			policy.addConnections();
 		}
 		super.startDragging();
 	}
@@ -72,6 +76,14 @@ export class Policy extends Draggable {
 		if (!this.wasTouched) {
 			let {x, y} = this.position;
 			this.group = this.paper.set();
+			if (this.isCloned) {
+				let cRect = this.paper.rect(x + 4, y + 4, policyWidth, policyHeight)
+				.attr({
+			    	'fill': '#DDD',
+			    	'stroke': '#000'
+				});
+				this.group.push(cRect);
+			}
 			let rect = this.paper.rect(x, y, policyWidth, policyHeight)
 				.attr({
 			    	'fill': '#EEE',
@@ -81,9 +93,8 @@ export class Policy extends Draggable {
 				.attr({
 					'text-anchor': 'start'
 				});
-
 			this.group.push(rect, text);
-			this.makeDraggable(this.group, [rect, text]);
+			this.makeDraggable(this.group);
 		}
 		super.render();
 		return this.group;
