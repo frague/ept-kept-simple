@@ -24,21 +24,22 @@ export class Link {
 		delete this;
 	}
 
-	_calcTo() {
+	_calcPath() {
 		let {x, y} = this.from.position;
 		let dx = this.to.position.x - x;
 		let dy = this.to.position.y - y;
 		let l = Math.sqrt(dx * dx + dy * dy);
-		let k = l ? radius / l : 1;
-		let sx = x + dx - dx * k;
-		let sy = y + dy - dy * k;
-		return ` T ${sx} ${sy}`;
+		
+		let ry = dy * (l ? radius / l : 1);
+		let ty = dy / 3;
+		let [sx, sy] = [x + dx, y + dy - ry];
+
+		return `M${x},${y + ry}C${x},${y + ty + ry},${sx},${sy - ty},${sx},${sy}`;
 	}
 
 	render() {
-		let path = `M ${this.from.position.x} ${this.from.position.y}${this._calcTo()}`;
 		if (!this.curve) {
-			let curve = this.paper.path(path);
+			let curve = this.paper.path(this._calcPath());
 			curve
 				.mouseover(() => {
 					curve.attr('stroke', 'red');
@@ -52,7 +53,7 @@ export class Link {
 			this.curve = curve;
 		}
 		this.curve.attr({
-			'path': path,
+			'path': this._calcPath(),
 			'stroke-width': 2,
 			'arrow-end': 'classic-wide-long'
 		});
