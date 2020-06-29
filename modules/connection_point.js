@@ -63,6 +63,19 @@ export class ConnectionPoint extends Positioned {
 		}
 	}
 
+	canConnectTo(cp) {
+		if (cp !== this
+			&& this.type !== cp.type
+			&& !cp.isLinked()
+			&& (
+				this.types.includes('any')
+				|| cp.types.includes('any')
+				|| this.types.some(type => cp.types.includes(type))
+			)
+		) return true;
+		return false;
+	}
+
 	render() {
 		if (!this.wasTouched) {
 			this.group = this.paper.set();
@@ -132,11 +145,7 @@ class Linker extends Draggable {
 	getConnectionCandidate() {
 		this.connectionCandidate = null;
 		storage.get(ConnectionPoint.name, []).forEach(cp => {
-			if (cp !== this.starter
-				&& this.starter.type !== cp.type
-				&& !cp.isLinked()
-				&& cp.checkApproach(this.position, 30)
-			) {
+			if (this.starter.canConnectTo(cp) && cp.checkApproach(this.position, 30)) {
 				this.connectionCandidate = cp;
 			}
 		});

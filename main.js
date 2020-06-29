@@ -68,10 +68,10 @@ window.onload = () => {
 	let etps = paper.rect(canvasWidth - 200, 0, 200, canvasHeight);
 
 	let middle = (canvasWidth - 200) / 2;
-	new ConnectionPoint(paper, {x: middle, y: 20}, connectionPointTypes.out, false, true).render();
+	new ConnectionPoint(paper, {x: middle, y: 20}, connectionPointTypes.out, false, true, ['any']).render();
 	paper.text(middle + radius + 5, 20, 'Input').attr('text-anchor', 'start');
 
-	new ConnectionPoint(paper, {x: middle, y: canvasHeight - 20}, connectionPointTypes.in, false, false).render();
+	new ConnectionPoint(paper, {x: middle, y: canvasHeight - 20}, connectionPointTypes.in, false, false, ['any']).render();
 	paper.text(middle + radius + 5, canvasHeight - 20, 'Output').attr('text-anchor', 'start');
 
 	paper.image('/images/settings.png', 20, 20, 20, 20)
