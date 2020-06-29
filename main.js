@@ -1,5 +1,6 @@
 import { etp } from './modules/data.js';
 import { Policy, policyHeight, policyWidth, policyTypes, clonePolicy } from './modules/policy.js';
+import { Link } from './modules/link.js';
 import { ConnectionPoint, connectionPointTypes, radius } from './modules/connection_point.js';
 import { PolicyForm } from './modules/policy_form.js';
 import { storage } from './modules/storage.js';
@@ -61,6 +62,23 @@ function cleanup() {
 	Array.from(storage.get('Policy', [])).forEach(policy => policy.destructor());
 }
 
+function updateConnectionTypes(cp) {
+	let max = 0;
+	let counted = cp.linkedWith.reduce((result, entity) => {
+		if (entity instanceof Link) {
+			(entity.from === cp ? entity.to : entity.from).types.forEach(type => {
+				let count = result[type] + 1 || 1;
+				result[type] = count;
+				if (count > max) max = count;
+			});
+		}
+		return result;
+	}, {});
+	cp.types = Object.keys(counted).filter(type => type !== 'any' && counted[type] === max);
+	if (!cp.types.length) cp.types = ['any'];
+	cp.render();
+}
+
 window.onload = () => {
 	let paper = Raphael(0, 0, '100%', '100%');
 	let canvasWidth = 800 || paper.canvas.clientWidth;
@@ -68,10 +86,14 @@ window.onload = () => {
 	let etps = paper.rect(canvasWidth - 200, 0, 200, canvasHeight);
 
 	let middle = (canvasWidth - 200) / 2;
-	new ConnectionPoint(paper, {x: middle, y: 20}, connectionPointTypes.out, false, true, ['any']).render();
-	paper.text(middle + radius + 5, 20, 'Input').attr('text-anchor', 'start');
+	let input = new ConnectionPoint(paper, {x: middle, y: 20}, connectionPointTypes.out, false, true, ['any']);
+	input.onLinkChange = () => updateConnectionTypes(input);
+	input.render();
+	paper.text(middle + radius + 5, 18, 'Input').attr('text-anchor', 'start');
 
-	new ConnectionPoint(paper, {x: middle, y: canvasHeight - 20}, connectionPointTypes.in, false, false, ['any']).render();
+	let output = new ConnectionPoint(paper, {x: middle, y: canvasHeight - 20}, connectionPointTypes.in, false, false, ['any']);
+	output.onLinkChange = () => updateConnectionTypes(output);
+	output.render();
 	paper.text(middle + radius + 5, canvasHeight - 20, 'Output').attr('text-anchor', 'start');
 
 	paper.image('/images/settings.png', 20, 20, 20, 20)

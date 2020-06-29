@@ -17,9 +17,11 @@ export class Link {
 		}
 		if (this.from) {
 			this.from.unlink(this);
+			this.from.onLinkChange();
 		}
 		if (this.to) {
 			this.to.unlink(this);
+			this.to.onLinkChange();
 		}
 		delete this;
 	}

@@ -37,6 +37,10 @@ export class ConnectionPoint extends Positioned {
 		return new ConnectionPoint(this.paper, this.position, this.type, this.isStatic, this.isMulti);
 	}
 
+	onLinkChange() {
+		// Custom linking logic
+	}
+
 	checkApproach(position, threshold) {
 		let {x, y} = this.position;
 		let dx = x - position.x;
@@ -159,6 +163,8 @@ class Linker extends Draggable {
 		if (connection) {
 			let isIncoming = connection.type === connectionPointTypes.in;
 			new Link(entity.paper, isIncoming ? entity.starter : connection, isIncoming ? connection : entity.starter).render();
+			entity.starter.onLinkChange();
+			connection.onLinkChange();
 			connection.isApproached = false;
 			connection.render();
 		}
@@ -168,6 +174,8 @@ class Linker extends Draggable {
 		entity.position = entity.starter.position;
 		entity.render();
 	}
+
+	onLinkChange() {}
 
 	render() {
 		if (!this.wasTouched) {
