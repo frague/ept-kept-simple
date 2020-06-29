@@ -16,13 +16,15 @@ export class ConnectionPoint extends Positioned {
 	connectionCandidate = null;
 	circle = null;
 	linker = null;
+	typesList = null;
 
-	constructor(paper, position, type=connectionPointTypes.any, isStatic=false, isMulti=false) {
+	constructor(paper, position, type=connectionPointTypes.any, isStatic=false, isMulti=false, types=[]) {
 		super(position);
 		this.paper = paper;
 		this.type = type;
 		this.isStatic = isStatic;
 		this.isMulti = isMulti;
+		this.types = types;
 	}
 
 	destructor() {
@@ -68,7 +70,13 @@ export class ConnectionPoint extends Positioned {
 				.attr({
 					fill: '#888'
 				});
-			this.group.push(this.base);
+			this.typesList = this.paper.text(
+				this.position.x + radius + 6,
+				this.position.y + (this.type === connectionPointTypes.out ? 8 : -10),
+				this.types.join(', '),
+			);
+			this.group.push(this.base, this.typesList);
+
 			if (!this.isStatic) {
 				this.linker = new Linker(this.paper, this.position, this);
 				this.group.push(this.linker.render());
@@ -78,6 +86,10 @@ export class ConnectionPoint extends Positioned {
 			'stroke': this.isApproached ? 'orange' : '#000',
 			'stroke-width': this.isApproached ? 2 : 1,
 			'fill': this._getColor()
+		});
+		this.typesList.attr({
+			'text': this.types.join(', '),
+			'text-anchor': 'start'
 		});
 
 		super.render();

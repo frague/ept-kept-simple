@@ -51,13 +51,14 @@ export class Policy extends Draggable {
 		this.hasErrors = Object.keys(data.parameters || {}).some(parameter => !data.parameters[parameter]);
 	}
 
-	addConnectionPoint(y, type, isStatic, isMulti) {
+	addConnectionPoint(y, type, isStatic, isMulti, acceptedTypes) {
 		let point = new ConnectionPoint(
 			this.paper,
 			{x: this.position.x + policyWidth / 2, y},
 			type,
 			isStatic,
-			isMulti
+			isMulti,
+			acceptedTypes
 		);
 		this.group.push(point.render());
 		this.linkWith(point);
@@ -66,8 +67,8 @@ export class Policy extends Draggable {
 
 	addConnections() {
 		let {x, y} = this.position;
-		this.input = this.addConnectionPoint(y, connectionPointTypes.in, false, false);
-		this.output = this.addConnectionPoint(y + policyHeight, connectionPointTypes.out, false, true);
+		this.input = this.addConnectionPoint(y, connectionPointTypes.in, false, false, this.data.input_types);
+		this.output = this.addConnectionPoint(y + policyHeight, connectionPointTypes.out, false, true, [this.data.output_type]);
 
 		this.group.push(
 			this.paper.image('/images/delete.png', x + policyWidth - 14, y + 2, 12, 12)
