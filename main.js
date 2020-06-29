@@ -110,7 +110,11 @@ window.onload = () => {
 		.attr('cursor', 'hand')
 		.click(() => {
 			let policies = storage.get('policies');
-			policies.push(clonePolicy(window.policy.data));
+			let data = Object.assign({}, window.policy.data, {
+				'input_types': input.types,
+				'output_type': output.types.length ? output.types[0] : 'any'
+			});
+			policies.push(clonePolicy(data));
 			storage.set('policies', policies);
 			initNewPolicy();
 			cleanup();
