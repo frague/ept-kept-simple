@@ -6,6 +6,8 @@ export class Positioned {
 	linkedWith = [];
 
 	constructor(position) {
+		this.id = this.generateId();
+		this.ownId = this.generateId();
 		this.position = position;
 		let className = this.constructor.name;
 
@@ -22,6 +24,10 @@ export class Positioned {
 			instances.splice(i, 1)
 			storage.set(className, instances);
 		}
+	}
+
+	generateId() {
+		return `${this.constructor.name}-${Math.round(9999 * Math.random())}`;
 	}
 
 	linkWith(entity) {

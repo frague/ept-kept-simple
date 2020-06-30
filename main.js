@@ -1,54 +1,28 @@
-import { etp } from './modules/data.js';
-import { Policy, policyHeight, policyWidth, policyTypes, clonePolicy } from './modules/policy.js';
+import { basic_epts } from './modules/data.js';
+import { Policy, policyHeight, policyWidth, policyTypes, clonePolicy, fromJSON } from './modules/policy.js';
 import { Link } from './modules/link.js';
 import { ConnectionPoint, connectionPointTypes, radius } from './modules/connection_point.js';
-import { PolicyForm } from './modules/policy_form.js';
+import { PolicyForm, clearForm } from './modules/policy_form.js';
 import { storage } from './modules/storage.js';
 
-storage.set('connection_points', []);
-
-function reRenderPolicies() {
-	let renderPolicies = new CustomEvent('render_policies', {});
-	window.dispatchEvent(renderPolicies);
-}
-
-function makeCloneLink(paper, policy) {
-	let cloningPosition = {
-		x: policy.position.x - 20,
-		y: policy.position.y + 10,
-	};
-	let cloneLink = paper.text(policy.position.x + policyWidth + 20, policy.position.y + policyHeight / 2, 'Clone')
-		.attr({
-			'cursor': 'hand',
-			'fill': 'blue',
-		})
-		.click(() => {
-			let clonedPolicy = policy.clone();
-			clonedPolicy.position = cloningPosition;
-			clonedPolicy.wasMoved = true;
-			clonedPolicy.type = policyTypes.cloned;
-			clonedPolicy.render();
-			clonedPolicy.addConnections();
-		});
-	policy.cloneLink = cloneLink;
-}
-
-function initNewPolicy() {
-	window.policy = {
-		'type': policyTypes.new,
-		'data': {
+function initNewPolicy(paper) {
+	window.policy = new Policy(
+		paper, 
+		{x: 100, y: 100},
+		{
 			'label': 'New',
 			'node': '',
 			'parameters': {},
 			'input_types': ['any'],
 			'output_type': 'any'
-		}
-	};
+		},
+		policyTypes.new
+	);
 }
 
 function gatherUnsetParameters() {
 	window.policy.data.parameters = storage.get('Policy', []).reduce((result, policy) => {
-		if ([policyTypes.basic, policyTypes.new].includes(policy.type)) return result;
+		if ([policyTypes.basic, policyTypes.new, policyTypes.custom].includes(policy.type)) return result;
 		let parameters = policy.data.parameters || {};
 		Object.keys(parameters).forEach(parameter => {
 			let p = parameters[parameter];
@@ -59,7 +33,14 @@ function gatherUnsetParameters() {
 }
 
 function cleanup() {
-	Array.from(storage.get('Policy', [])).forEach(policy => policy.destructor());
+	Array.from(storage.get('Policy', [])).forEach(policy => {
+		if (policy.type === policyTypes.reference) {
+			policy.destructor()
+		} else if (policy.type === policyTypes.cloned) {
+			keepPolicyInCatalog(policy);
+			policy.destructor(true);
+		}
+	});
 }
 
 function updateConnectionTypes(cp) {
@@ -79,24 +60,114 @@ function updateConnectionTypes(cp) {
 	cp.render();
 }
 
-window.onload = () => {
-	let paper = Raphael(0, 0, '100%', '100%');
-	let canvasWidth = 800 || paper.canvas.clientWidth;
-	let canvasHeight = paper.canvas.clientHeight;
-	let etps = paper.rect(canvasWidth - 200, 0, 200, canvasHeight);
+function keepPolicyInCatalog(policy) {
+	let availablePolicies = storage.get('available_policies', {});
+	let exists = availablePolicies.hasOwnProperty(policy.id);
+	availablePolicies[policy.id] = policy;
+	storage.set('available_policies', availablePolicies);
+	return exists;
+}
 
-	let middle = (canvasWidth - 200) / 2;
+function gatherJSON() {
+	return {
+		nodes: storage.get('Policy', [])
+			.filter(ept => ept.wasTouched)
+			.map(ept => ept.toJSON()),
+		links: storage.get('ConnectionPoint', [])
+			.filter(point => point.type === connectionPointTypes.out)
+			.reduce((result, point) => {
+				point.linkedWith
+					.filter(connection => connection instanceof Link)
+					.map(link => result.push([link.from.belongsTo, link.to.belongsTo]));
+				return result;
+			}, [])
+	};
+}
+
+var policyIndex = 0;
+function pushPolicy(ept) {
+	ept.asJSON = gatherJSON();
+	if (!keepPolicyInCatalog(ept)) policyIndex++;
+}
+
+function createEptLink(title, ept, handler) {
+	let li = document.createElement('li');
+	li.innerText = title;
+	li.onclick = () => handler(ept);
+	return li;
+}
+
+// Print list of EPTs stored in catalog
+function printEtps(paper) {
+	var container = document.getElementById('ept-list');
+	container.innerHTML = '';
+
+	let epts = storage.get('available_policies', {});
+	Object.keys(epts).forEach(id => {
+		let p = epts[id];
+		let li = document.createElement('li');
+		li.innerText = p.data.label;
+		li.className = p.type;
+		li.appendChild(document.createElement('span'));
+
+		let links = document.createElement('ul');
+		links.appendChild(createEptLink('Insert', p, (ept) => ept.clone(policyTypes.reference).render()));
+
+		if (p.type !== policyTypes.basic) {
+			links.append(
+				createEptLink('Clone', p, (ept) => ept.clone(policyTypes.cloned).render()),
+				createEptLink('View', p, (ept) => {
+					window.policy = ept;
+					let availablePolicies = storage.get('available_policies', {});
+					let nodes = (ept.asJSON.nodes || []).reduce((result, data) => {
+						let p = fromJSON(data, availablePolicies);
+						p.render();
+						result[p.ownId] = p;
+						return result;
+					}, {});
+					(ept.asJSON.links || []).forEach(([from, to]) => {
+						try {
+							new Link(
+								paper,
+								from ? nodes[from].output : window.inputPoint,
+								to ? nodes[to].input : window.outputPoint,
+							).render();
+						} catch (e) {
+							console.log(e);
+						}
+					});
+				})
+			);
+		}
+
+		li.appendChild(links);
+
+		container.appendChild(li);
+	});
+}
+
+window.onload = () => {
+	// Initialize the canvas
+	let paper = Raphael(200, 0, '600px', '600px');
+	let canvasWidth = paper.canvas.clientWidth;
+	let canvasHeight = paper.canvas.clientHeight;
+
+	// New EPT input and output connection points
+	let middle = canvasWidth / 2;
 	let input = new ConnectionPoint(paper, {x: middle, y: 20}, connectionPointTypes.out, false, true, ['any']);
 	input.onLinkChange = () => updateConnectionTypes(input);
 	input.render();
+	window.inputPoint = input;
 	paper.text(middle + radius + 5, 18, 'Input').attr('text-anchor', 'start');
 
 	let output = new ConnectionPoint(paper, {x: middle, y: canvasHeight - 20}, connectionPointTypes.in, false, false, ['any']);
 	output.onLinkChange = () => updateConnectionTypes(output);
 	output.render();
+	window.outputPoint = output;
 	paper.text(middle + radius + 5, canvasHeight - 20, 'Output').attr('text-anchor', 'start');
 
-	paper.image('/images/settings.png', 20, 20, 20, 20)
+	// New EPTs settings button with handler
+	paper.image('/images/settings.png', 40, 20, 20, 20)
 		.attr('cursor', 'hand')
 		.click(() => {
 			gatherUnsetParameters();
@@ -106,40 +177,29 @@ window.onload = () => {
 				.render();
 		});
 
-	paper.image('/images/save.png', 45, 20, 20, 20)
+	// New EPTs save button with handler
+	paper.image('/images/save.png', 65, 20, 20, 20)
 		.attr('cursor', 'hand')
 		.click(() => {
-			let policies = storage.get('policies');
-			let data = Object.assign({}, window.policy.data, {
+			let ept = window.policy;
+			Object.assign(ept.data, {
 				'input_types': input.types,
-				'output_type': output.types.length ? output.types[0] : 'any'
+				'output_type': output.types.length ? output.types[0] : null
 			});
-			policies.push(clonePolicy(data));
-			storage.set('policies', policies);
+			if (ept.type === policyTypes.new) ept.type = policyTypes.custom;
+			pushPolicy(ept);
 			initNewPolicy();
 			cleanup();
-			reRenderPolicies();
+			printEtps(paper);
+			clearForm();
 		});
 
-	storage.set('policies', etp || []);
-
-	window.addEventListener('render_policies', (data) => {
-		let policiesRendered = storage.get('policiesRendered', []);
-		policiesRendered.forEach(policy => {
-			policy.cloneLink.remove();
-			policy.destructor();
-		});
-
-		policiesRendered = storage.get('policies', []).map((policy, index) => {
-			let p = new Policy(paper, {x: etps.attrs.x + 10, y: etps.attrs.y + 10 + index * (policyHeight + 4)}, policy);
-			p.type = policy.basic ? policyTypes.basic : policyTypes.new;
-			p.render();
-			makeCloneLink(paper, p);
-			return p;
-		});
-		storage.set('policiesRendered', policiesRendered);
+	// Create and render basic policies list from data.js
+	(basic_epts || []).forEach(data => {
+		let p = new Policy(paper, {x: 100, y: 100}, data, policyTypes.basic);
+		if (data.id) p.id = data.id;
+		pushPolicy(p);
 	});
-	reRenderPolicies();
-
+	printEtps();
 	initNewPolicy();
 };

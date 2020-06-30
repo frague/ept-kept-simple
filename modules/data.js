@@ -1,4 +1,4 @@
-export var etp = [
+export var basic_epts = [
 	{
 		'label': 'Subinterface',
 		'tags': [],
@@ -20,7 +20,6 @@ export var etp = [
 		},
 		'input_types': ['interface'],
 		'output_type': 'interface',
-		'basic': true,
 	},
 	{
 		'label': 'Address type',
@@ -32,7 +31,6 @@ export var etp = [
 		},
 		'input_types': ['interface', 'subinterface'],
 		'output_type': 'interface',
-		'basic': true,
 	},
 	{
 		'label': 'BGP unnumbered',
@@ -41,7 +39,6 @@ export var etp = [
 		'parameters': {},
 		'input_types': ['interface', 'subinterface'],
 		'output_type': 'interface',
-		'basic': true,
 	},
 	{
 		'label': 'Routing policy',
@@ -50,6 +47,5 @@ export var etp = [
 		'parameters': {},
 		'input_types': ['any'],
 		'output_type': 'interface',
-		'basic': true,
 	},
 ]

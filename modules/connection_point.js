@@ -17,6 +17,7 @@ export class ConnectionPoint extends Positioned {
 	circle = null;
 	linker = null;
 	typesList = null;
+	belongsTo = null;
 
 	constructor(paper, position, type=connectionPointTypes.any, isStatic=false, isMulti=false, types=[]) {
 		super(position);

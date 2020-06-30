@@ -8,10 +8,19 @@ export const policyHeight = 30;
 const charWidth = 6;
 
 export const policyTypes = {
-	'basic': '#DDF', 
-	'cloned': '#EEE', 
-	'new': '#DFD',
-	'reference': '#EFEFEF'
+	basic: 'basic',
+	cloned: 'cloned',
+	new: 'new',
+	reference: 'reference',
+	custom: 'custom'
+};
+
+export const policyTypesColors = {
+	[policyTypes.basic]: '#DDF', 
+	[policyTypes.cloned]: '#EEE', 
+	[policyTypes.new]: '#DFD',
+	[policyTypes.reference]: '#EFEFEF',
+	[policyTypes.custom]: '#888'
 };
 
 export const clonePolicy = policy => {
@@ -20,31 +29,61 @@ export const clonePolicy = policy => {
 	return clonedPolicy;
 }
 
+export const fromJSON = (json, availablePolicies) => {
+	let p = availablePolicies[json.id];
+	if (p) {
+		let result = p.clone([policyTypes.basic, policyTypes.custom].includes(p.type) ? policyTypes.reference : p.type);
+		result.position = json.position;
+		result.ownId = json.ownId;
+		return result;
+	} else {
+		throw new Error('Unable to find EPT id=', json.id);
+	}
+};
+
 export class Policy extends Draggable {
 	wasMoved = false;
-	type = policyTypes.reference;
+	type;
 	hasErrors = false;
+	asJSON = {nodes: [], links: []};
 
 	input = null;
 	output = null;
 
-	constructor(paper, position, data) {
+	serialized = {};
+
+	constructor(paper, position, data, type=policyTypes.reference) {
 		super(position);
 		this.paper = paper;
-
 		this.data = clonePolicy(data);
 		this.validatePolicyParameters(this.data);
+		this.type = type;
 	}
 
-	destructor() {
+	destructor(keepObject=false) {
 		super.destructor();
 		this.linkedWith.forEach(linked => linked.destructor());
 		this.group.remove();
-		delete this;
+		if (!keepObject) delete this;
 	}
 
-	clone() {
-		return new Policy(this.paper, this.position, this.data);
+	toJSON() {
+		return {
+			id: this.id,
+			ownId: this.ownId,
+			position: this.position
+		};
+	}
+
+	clone(type) {
+		if (!type) {
+			throw new Error('Policy cloning with no type specified!');
+		}
+		let p = new Policy(this.paper, this.position, this.data, type);
+		if (type === policyTypes.reference) {
+			p.id = this.id;
+		}
+		return p;
 	}
 
 	validatePolicyParameters(data) {
@@ -62,6 +101,7 @@ export class Policy extends Draggable {
 		);
 		this.group.push(point.render());
 		this.linkWith(point);
+		point.belongsTo = this.ownId;
 		return point;
 	}
 
@@ -89,21 +129,6 @@ export class Policy extends Draggable {
 		);
 	}
 
-	startDragging() {
-		let policy = this.container.entity;
-		if (!policy.wasMoved) {
-			let np = policy.clone();
-			np.type = policy.type;
-			np.render();
-
-			policy.wasMoved = true;
-			policy.addConnections();
-			policy.type = policyTypes.reference;
-			policy.render();
-		}
-		super.startDragging();
-	}
-
 	updatePosition(dx, dy) {
 		super.updatePosition(dx, dy);
 		if (this.input) {
@@ -121,7 +146,7 @@ export class Policy extends Draggable {
     }
 
     _determineColor() {
-    	let color = this.type;
+    	let color = policyTypesColors[this.type];
     	if (this.wasMoved) {
 	    	if (this.hasErrors) {
 	    		color = '#FAA';
@@ -148,6 +173,8 @@ export class Policy extends Draggable {
 				.attr('text-anchor', 'start');
 			this.group.push(this.rect, this.text);
 			this.makeDraggable(this.group);
+
+			this.addConnections();
 		}
 		this.rect.attr('fill', this._determineColor());
 		this.text.attr('text', this._splitTitle(this.data.label));

@@ -1,0 +1,125 @@
+* {
+	font-family: Arial, Tahoma, Verdana;
+}
+
+h1 {
+	padding: 0;
+	margin: 0 0 10px 0;
+	font-size: 20px;
+}
+
+#pane {
+	position: absolute;
+	top: 0px;
+	right: 0px;
+	bottom: 0px;
+	left: 0px;
+}
+
+.etps {
+	fill: "#EFEFEF";
+}
+
+.rectangle {
+	fill: #EEE;
+	stroke: black;
+}
+
+text {
+	color: black;
+}
+
+section {
+	height: 600px;
+	position: absolute;
+	top: 0;
+	padding: 10px;
+	z-index: 100;
+	border: solid 1px #888;
+	border-width: 0 1px;
+
+	&#epts {
+		width: 200px;
+		left: 0px;
+
+		ul {
+			padding-left: 0;
+			li {
+				list-style: none;
+				margin-bottom: 16px;
+				line-height: 1;
+
+				span {
+					position: relative;
+					font-size: 10px;
+					top: -4px;
+					left: 4px;
+					color: #888;
+				}
+
+				&.basic span:after {
+					content: '(Basic)';
+				}
+
+				&.custom span:after {
+					content: '(User-defined)';
+				}
+
+				&.new {
+					color: #4F4;
+					span:after {
+						content: '(New)';
+					}
+				}
+
+				&.cloned {
+					text-decoration: line-through;
+					span:after {
+						content: '(Cloned)';
+					}
+				}
+
+				ul li {
+					font-size: 10px;
+					color: #88F;
+					cursor: pointer;
+					display: inline-block;
+					margin: 0 10px 0 0;
+				}
+			}
+		}
+	}
+
+	&#forms {
+		width: 300px;
+		left: 830px;
+
+		input {
+			width: 100%;
+			padding: 6px;
+			padding: 6px 0;
+			border: solid 1px #888;
+			border-width: 0 0 1px 0;
+			background-color: #EFEFEF;
+
+			&:focus {
+				outline: none;
+			}
+
+			&#label {
+				margin-bottom: 10px;
+				font-size: 20px;
+			}
+		}
+
+		button {
+			margin-top: 20px;
+			float: right;
+			padding: 6px;
+		}
+	}
+
+	div {
+		margin-top: 10px;
+	}
+}

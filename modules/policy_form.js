@@ -2,16 +2,16 @@ import { clonePolicy, policyTypes } from './policy.js';
 
 const placeholder = document.getElementById('forms');
 
+export const clearForm = () => {
+	placeholder.innerHTML = '';
+};
+
 export class PolicyForm {
 	constructor(policy, callback=() => {}) {
 		this.callback = callback;
 
 		this.policy = policy;
 		this.data = clonePolicy(policy.data);
-	}
-
-	_clear() {
-		placeholder.innerHTML = '';
 	}
 
 	_updateParameter(input) {
@@ -43,7 +43,7 @@ export class PolicyForm {
 
 	render() {
 		if (!placeholder) return;
-		this._clear();
+		clearForm();
 
 		if ([policyTypes.reference, policyTypes.basic].includes(this.policy.type)) {
 			let title = document.createElement('h1');
