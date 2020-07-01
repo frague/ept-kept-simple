@@ -98,6 +98,14 @@ function createEptLink(title, ept, handler) {
 	return li;
 }
 
+function randomizePosition(ept) {
+	let {x, y} = ept.position;
+	x += 100 * Math.random();
+	y += 100 * Math.random();
+	ept.position = {x, y};
+	return ept;
+}
+
 // Print list of EPTs stored in catalog
 function printEtps(paper) {
 	var container = document.getElementById('ept-list');
@@ -112,11 +120,17 @@ function printEtps(paper) {
 		li.appendChild(document.createElement('span'));
 
 		let links = document.createElement('ul');
-		links.appendChild(createEptLink('Insert', p, (ept) => ept.clone(policyTypes.reference).render()));
+		links.appendChild(createEptLink(
+			'Insert', p, 
+			ept => randomizePosition(ept.clone(policyTypes.reference)).render()
+		));
 
 		if (p.type !== policyTypes.basic) {
 			links.append(
-				createEptLink('Clone', p, (ept) => ept.clone(policyTypes.cloned).render()),
+				createEptLink(
+					'Clone', p, 
+					ept => randomizePosition(ept.clone(policyTypes.cloned)).render()
+				),
 				createEptLink('View', p, (ept) => {
 					document.getElementById('ept-label').innerText = ept.data.label;
 					window.policy = ept;

@@ -105,7 +105,7 @@ export class Policy extends Draggable {
 		return point;
 	}
 
-	addConnections() {
+	addExtras() {
 		let {x, y} = this.position;
 		this.input = this.addConnectionPoint(y, connectionPointTypes.in, false, false, this.data.input_types);
 		this.output = this.addConnectionPoint(y + policyHeight, connectionPointTypes.out, false, true, [this.data.output_type]);
@@ -116,16 +116,16 @@ export class Policy extends Draggable {
 				.click(() => {
 					this.destructor();
 				}),
-			this.paper.image('/images/settings.png', x + policyWidth - 13, y + 17, 10, 10)
-				.attr('cursor', 'hand')
-				.click(() => {
-					new PolicyForm(this, data => {
-						this.data = data;
-						this.validatePolicyParameters(data);
-						this.render();
-					})
-						.render();
-				})
+			// this.paper.image('/images/settings.png', x + policyWidth - 13, y + 17, 10, 10)
+			// 	.attr('cursor', 'hand')
+			// 	.click(() => {
+			// 		new PolicyForm(this, data => {
+			// 			this.data = data;
+			// 			this.validatePolicyParameters(data);
+			// 			this.render();
+			// 		})
+			// 			.render();
+			// 	})
 		);
 	}
 
@@ -174,7 +174,7 @@ export class Policy extends Draggable {
 			this.group.push(this.rect, this.text);
 			this.makeDraggable(this.group);
 
-			this.addConnections();
+			this.addExtras();
 		}
 		this.rect.attr('fill', this._determineColor());
 		this.text.attr('text', this._splitTitle(this.data.label));
