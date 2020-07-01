@@ -18,6 +18,7 @@ function initNewPolicy(paper) {
 		},
 		policyTypes.new
 	);
+	document.getElementById('ept-label').innerText = window.policy.data.label;
 }
 
 function gatherUnsetParameters() {
@@ -117,6 +118,7 @@ function printEtps(paper) {
 			links.append(
 				createEptLink('Clone', p, (ept) => ept.clone(policyTypes.cloned).render()),
 				createEptLink('View', p, (ept) => {
+					document.getElementById('ept-label').innerText = ept.data.label;
 					window.policy = ept;
 					let availablePolicies = storage.get('available_policies', {});
 					let nodes = (ept.asJSON.nodes || []).reduce((result, data) => {
@@ -148,7 +150,7 @@ function printEtps(paper) {
 
 window.onload = () => {
 	// Initialize the canvas
-	let paper = Raphael(200, 0, '600px', '600px');
+	let paper = Raphael(200, 40, '600px', '600px');
 	let canvasWidth = paper.canvas.clientWidth;
 	let canvasHeight = paper.canvas.clientHeight;
 
@@ -167,18 +169,19 @@ window.onload = () => {
 	paper.text(middle + radius + 5, canvasHeight - 20, 'Output').attr('text-anchor', 'start');
 
 	// New EPTs settings button with handler
-	paper.image('/images/settings.png', 40, 20, 20, 20)
+	paper.image('/images/settings.png', 30, 0, 15, 15)
 		.attr('cursor', 'hand')
 		.click(() => {
 			gatherUnsetParameters();
 			new PolicyForm(window.policy, data => {
 				window.policy.data = data;
+				document.getElementById('ept-label').innerText = data.label;
 			})
 				.render();
 		});
 
 	// New EPTs save button with handler
-	paper.image('/images/save.png', 65, 20, 20, 20)
+	paper.image('/images/save.png', 50, 0, 15, 15)
 		.attr('cursor', 'hand')
 		.click(() => {
 			let ept = window.policy;
@@ -191,6 +194,14 @@ window.onload = () => {
 			initNewPolicy();
 			cleanup();
 			printEtps(paper);
+			clearForm();
+		});
+
+	paper.image('/images/refresh.png', 70, 0, 15, 15)
+		.attr('cursor', 'hand')
+		.click(() => {
+			initNewPolicy();
+			cleanup();
 			clearForm();
 		});
 
