@@ -1,4 +1,5 @@
-import { clonePolicy, policyTypes } from './policy.js';
+import { clonePolicy, policyTypes, Policy } from './policy.js';
+import { storage } from './storage.js';
 
 const placeholder = document.getElementById('forms');
 
@@ -6,12 +7,58 @@ export const clearForm = () => {
 	placeholder.innerHTML = '';
 };
 
+// function _prefixParameters(prefix, parameters) {
+// 	return Object.keys(parameters).reduce((result, key) => {
+// 		result[`${prefix}|${key}`] = parameters[key];
+// 		return result;
+// 	}, {});
+// }
+
+function gatherParameters(ept, catalog, path, collector={}) {
+	return ept.asJSON.nodes.reduce((result, {id, ownId}) => {
+		let node = catalog[id];
+		if (!node) {
+			throw new Error(`Unable to find EPT (ID: ${id}, OwnID: ${ownId})`);
+		}
+		let localPath = `${path}${path ? '|' : ''}${ownId}`;
+
+		if (node.type === policyTypes.basic) {
+			result[ownId] = {
+				label: node.data.label,
+				parameters: node.data.parameters
+				// parameters: _prefixParameters(localPath, node.data.parameters)
+			};
+			return result;
+		}
+
+		let json = node.asJSON;
+		if (json) {
+			result[ownId] = gatherParameters(node, catalog, localPath, {
+				label: node.data.label,
+				parameters: json.parameters
+				// parameters: _prefixParameters(localPath, json.parameters)
+			});
+		}
+		return result;
+	}, collector);
+}
+
 export class PolicyForm {
-	constructor(policy, callback=() => {}) {
+	constructor(policy, callback=() => {}, isReadonly=false) {
 		this.callback = callback;
 
 		this.policy = policy;
 		this.data = clonePolicy(policy.data);
+		this.isReadonly = isReadonly;
+
+		// Rebuild full EPTs catalog to include newly cloned ones (uncommitted)
+		let fullCatalog = storage.get(Policy.name, []).reduce((result, ept) => {
+			result[ept.ownId] = ept;
+			return result;
+		}, {});
+		console.log(fullCatalog);
+		let p = gatherParameters(policy, fullCatalog, policy.ownId);
+		console.log('Parameters gathered:', p);
 	}
 
 	_updateParameter(input) {
@@ -31,7 +78,7 @@ export class PolicyForm {
 		input.name = name;
 		input.value = value;
 		input.onchange = () => this._updateParameter(input);
-		if (value && ![policyTypes.cloned, policyTypes.new].includes(this.policy.type)) {
+		if (this.isReadonly || (value && ![policyTypes.cloned, policyTypes.new].includes(this.policy.type))) {
 			input.setAttribute('disabled', 'true');
 		}
 

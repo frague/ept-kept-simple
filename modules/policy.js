@@ -12,7 +12,8 @@ export const policyTypes = {
 	cloned: 'cloned',
 	new: 'new',
 	reference: 'reference',
-	custom: 'custom'
+	custom: 'custom',
+	clonedCustom: 'custom-cloned'
 };
 
 export const policyTypesColors = {
@@ -32,20 +33,24 @@ export const clonePolicy = policy => {
 export const fromJSON = (json, availablePolicies) => {
 	let p = availablePolicies[json.id];
 	if (p) {
-		let result = p.clone([policyTypes.basic, policyTypes.custom].includes(p.type) ? policyTypes.reference : p.type);
+		let type = p.type;
+		if ([policyTypes.basic, policyTypes.custom].includes(p.type)) type = policyTypes.reference;
+		if (p.type === policyTypes.clonedCustom) type = policyTypes.cloned;
+		let result = p.clone(type);
 		result.position = json.position;
+		result.id = json.id;
 		result.ownId = json.ownId;
 		return result;
 	} else {
+		console.log(json, availablePolicies);
 		throw new Error('Unable to find EPT id=', json.id);
 	}
 };
 
 export class Policy extends Draggable {
-	wasMoved = false;
 	type;
 	hasErrors = false;
-	asJSON = {nodes: [], links: []};
+	asJSON = {nodes: [], links: [], parameters: {}};
 
 	input = null;
 	output = null;
@@ -58,12 +63,15 @@ export class Policy extends Draggable {
 		this.data = clonePolicy(data);
 		this.validatePolicyParameters(this.data);
 		this.type = type;
+		if ([policyTypes.basic, policyTypes.clonedCustom].includes(type)) {
+			this.ownId = this.id;
+		}
 	}
 
 	destructor(keepObject=false) {
 		super.destructor();
 		this.linkedWith.forEach(linked => linked.destructor());
-		this.group.remove();
+		if (this.isRendered) this.group.remove();
 		if (!keepObject) delete this;
 	}
 
@@ -82,6 +90,9 @@ export class Policy extends Draggable {
 		let p = new Policy(this.paper, this.position, this.data, type);
 		if (type === policyTypes.reference) {
 			p.id = this.id;
+		} else if (type === policyTypes.clonedCustom) {
+			p.ownId = p.id;
+			p.asJSON = this.asJSON;
 		}
 		return p;
 	}
@@ -116,16 +127,17 @@ export class Policy extends Draggable {
 				.click(() => {
 					this.destructor();
 				}),
-			// this.paper.image('/images/settings.png', x + policyWidth - 13, y + 17, 10, 10)
-			// 	.attr('cursor', 'hand')
-			// 	.click(() => {
-			// 		new PolicyForm(this, data => {
-			// 			this.data = data;
-			// 			this.validatePolicyParameters(data);
-			// 			this.render();
-			// 		})
-			// 			.render();
-			// 	})
+			this.paper.image('/images/settings.png', x + policyWidth - 13, y + 17, 10, 10)
+				.attr('cursor', 'hand')
+				.click(() => {
+					new PolicyForm(this, data => {
+						this.data = data;
+						this.validatePolicyParameters(data);
+						this.render();
+					},
+					true)
+						.render();
+				})
 		);
 	}
 
@@ -147,16 +159,14 @@ export class Policy extends Draggable {
 
     _determineColor() {
     	let color = policyTypesColors[this.type];
-    	if (this.wasMoved) {
-	    	if (this.hasErrors) {
-	    		color = '#FAA';
-	    	}
+    	if (this.hasErrors) {
+    		color = '#FAA';
     	}
     	return color;
     }
 
 	render() {
-		if (!this.wasTouched) {
+		if (!this.isRendered) {
 			let {x, y} = this.position;
 			this.group = this.paper.set();
 			if (this.type === policyTypes.cloned) {
@@ -177,7 +187,7 @@ export class Policy extends Draggable {
 			this.addExtras();
 		}
 		this.rect.attr('fill', this._determineColor());
-		this.text.attr('text', this._splitTitle(this.data.label));
+		this.text.attr('text', this._splitTitle(this.data.label) + ` (#${this.id})`);
 		super.render();
 		return this.group;
 	}

@@ -82,7 +82,7 @@ export class ConnectionPoint extends Positioned {
 	}
 
 	render() {
-		if (!this.wasTouched) {
+		if (!this.isRendered) {
 			this.group = this.paper.set();
 			this.base = this.paper.circle(this.position.x, this.position.y, radius)
 				.attr({
@@ -179,7 +179,7 @@ class Linker extends Draggable {
 	onLinkChange() {}
 
 	render() {
-		if (!this.wasTouched) {
+		if (!this.isRendered) {
 			this.circle = this.paper.circle(this.position.x, this.position.y, radius - 2)
 				.attr({
 					fill: 'rgba(0,0,0,0.5)'

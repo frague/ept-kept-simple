@@ -33,17 +33,6 @@ function gatherUnsetParameters() {
 	}, {});
 }
 
-function cleanup() {
-	Array.from(storage.get('Policy', [])).forEach(policy => {
-		if (policy.type === policyTypes.reference) {
-			policy.destructor()
-		} else if (policy.type === policyTypes.cloned) {
-			keepPolicyInCatalog(policy);
-			policy.destructor(true);
-		}
-	});
-}
-
 function updateConnectionTypes(cp) {
 	let max = 0;
 	let counted = cp.linkedWith.reduce((result, entity) => {
@@ -61,6 +50,20 @@ function updateConnectionTypes(cp) {
 	cp.render();
 }
 
+function cleanup(isNew=false) {
+	Array.from(storage.get('Policy', [])).forEach(policy => {
+		if ([policyTypes.reference, policyTypes.cloned].includes(policy.type)) {
+			policy.destructor()
+		// } else if (policy.type === policyTypes.cloned) {
+		// 	if (isNew) keepPolicyInCatalog(policy);
+		// 	policy.destructor(!isNew);
+		} else if (policy.type === policyTypes.clonedCustom) {
+			keepPolicyInCatalog(policy);
+			policy.destructor(true);
+		}
+	});
+}
+
 function keepPolicyInCatalog(policy) {
 	let availablePolicies = storage.get('available_policies', {});
 	let exists = availablePolicies.hasOwnProperty(policy.id);
@@ -72,7 +75,7 @@ function keepPolicyInCatalog(policy) {
 function gatherJSON() {
 	return {
 		nodes: storage.get('Policy', [])
-			.filter(ept => ept.wasTouched)
+			.filter(ept => ept.isRendered)
 			.map(ept => ept.toJSON()),
 		links: storage.get('ConnectionPoint', [])
 			.filter(point => point.type === connectionPointTypes.out)
@@ -81,7 +84,8 @@ function gatherJSON() {
 					.filter(connection => connection instanceof Link)
 					.map(link => result.push([link.from.belongsTo, link.to.belongsTo]));
 				return result;
-			}, [])
+			}, []),
+		parameters: {}	// TODO: Gather own set parameters
 	};
 }
 
@@ -129,10 +133,20 @@ function printEtps(paper) {
 			links.append(
 				createEptLink(
 					'Clone', p, 
-					ept => randomizePosition(ept.clone(policyTypes.cloned)).render()
+					ept => {
+						let clone = ept.clone(policyTypes.clonedCustom);
+						let reference = clone.clone(policyTypes.cloned);
+						reference.id = clone.id;
+						randomizePosition(reference).render();
+					}
 				),
 				createEptLink('View', p, (ept) => {
+					cleanup(false);
+					clearForm();
 					document.getElementById('ept-label').innerText = ept.data.label;
+					if (window.policy.type === policyTypes.new) {
+						window.policy.destructor();
+					}
 					window.policy = ept;
 					let availablePolicies = storage.get('available_policies', {});
 					let nodes = (ept.asJSON.nodes || []).reduce((result, data) => {
@@ -186,11 +200,12 @@ window.onload = () => {
 	paper.image('/images/settings.png', 30, 0, 15, 15)
 		.attr('cursor', 'hand')
 		.click(() => {
+			window.policy.asJSON = gatherJSON();
 			gatherUnsetParameters();
 			new PolicyForm(window.policy, data => {
 				window.policy.data = data;
 				document.getElementById('ept-label').innerText = data.label;
-			})
+			}, false)
 				.render();
 		});
 
@@ -203,19 +218,23 @@ window.onload = () => {
 				'input_types': input.types,
 				'output_type': output.types.length ? output.types[0] : null
 			});
-			if (ept.type === policyTypes.new) ept.type = policyTypes.custom;
+			if (ept.type === policyTypes.new) {
+				ept.type = policyTypes.custom;
+				ept.ownId = ept.id;
+			}
 			pushPolicy(ept);
-			initNewPolicy();
-			cleanup();
+			initNewPolicy(paper);
+			cleanup(true);
 			printEtps(paper);
 			clearForm();
 		});
 
+	// Wipe out button
 	paper.image('/images/refresh.png', 70, 0, 15, 15)
 		.attr('cursor', 'hand')
 		.click(() => {
-			initNewPolicy();
-			cleanup();
+			initNewPolicy(paper);
+			cleanup(false);
 			clearForm();
 		});
 
@@ -226,5 +245,5 @@ window.onload = () => {
 		pushPolicy(p);
 	});
 	printEtps();
-	initNewPolicy();
+	initNewPolicy(paper);
 };

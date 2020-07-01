@@ -1,8 +1,10 @@
 import { storage } from './storage.js';
 
+var instancesCounter = 0;
+
 export class Positioned {
 	position = {x: 0, y: 0};
-	wasTouched = false;
+	isRendered = false;
 	linkedWith = [];
 
 	constructor(position) {
@@ -21,13 +23,15 @@ export class Positioned {
 		let instances = storage.get(className, []);
 		let i = instances.indexOf(this);
 		if (i >= 0) {
-			instances.splice(i, 1)
+			instances.splice(i, 1);
 			storage.set(className, instances);
+			// console.log(`${className} id=${this.id} ownId=${this.ownId} has been removed`, storage.get(className));
 		}
 	}
 
 	generateId() {
-		return `${this.constructor.name}-${Math.round(9999 * Math.random())}`;
+		return `${this.constructor.name}-${++instancesCounter}`;
+		// return `${this.constructor.name}-${Math.round(9999 * Math.random())}`;
 	}
 
 	linkWith(entity) {
@@ -45,7 +49,7 @@ export class Positioned {
 	}
 
 	render() {
-		this.wasTouched = true;
+		this.isRendered = true;
 		this.linkedWith.forEach(entity => entity.render());
 	}
 }

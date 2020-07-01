@@ -79,7 +79,7 @@ section {
 					}
 				}
 
-				&.cloned {
+				&.custom-cloned {
 					text-decoration: line-through;
 					span:after {
 						content: '(Cloned)';
