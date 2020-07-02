@@ -30,7 +30,8 @@ export class Positioned {
 	}
 
 	generateId() {
-		return `${this.constructor.name}-${++instancesCounter}`;
+		return `ID${++instancesCounter}`;
+		// return `${this.constructor.name}-${++instancesCounter}`;
 		// return `${this.constructor.name}-${Math.round(9999 * Math.random())}`;
 	}
 

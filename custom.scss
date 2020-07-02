@@ -14,6 +14,10 @@ h1 {
 	}
 }
 
+h2 {
+	font-size: 14px;
+}
+
 #pane {
 	position: absolute;
 	top: 0px;
@@ -101,6 +105,25 @@ section {
 		width: 300px;
 		left: 830px;
 
+		ul {
+			padding-left: 0;
+
+			& ul {
+				font-size: 80%;
+				padding-left: 10px;
+			}
+
+			li {
+				list-style: none;
+				margin-bottom: 16px;
+				line-height: 1;
+			}
+		}
+
+		label {
+			font-size: 12px !important;
+		}
+
 		input {
 			width: 100%;
 			padding: 6px;
@@ -120,9 +143,24 @@ section {
 		}
 
 		button {
-			margin-top: 20px;
+			margin: 20px 0 10px 0;
 			float: right;
 			padding: 6px;
+		}
+
+	}
+	&#debug {
+		width: 300px;
+		left: 1150px;
+		border: none;
+
+		pre {
+			border: solid 1px #888;
+			font-size: 12px;
+			font-family: Courier;
+			padding: 4px;
+			clear: both;
+			margin-top: 10px;
 		}
 	}
 

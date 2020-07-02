@@ -7,85 +7,143 @@ export const clearForm = () => {
 	placeholder.innerHTML = '';
 };
 
-// function _prefixParameters(prefix, parameters) {
-// 	return Object.keys(parameters).reduce((result, key) => {
-// 		result[`${prefix}|${key}`] = parameters[key];
-// 		return result;
-// 	}, {});
-// }
+function listKeysIn(source, prefix, destination) {
+	Object.keys(source).forEach(key => {
+		let pkey = `${prefix}.${key}`;
+		if (source[key]) {
+			delete destination[pkey];
+		} else {
+			destination[pkey] = source[key];
+		}
+	});
+}
 
-function gatherParameters(ept, catalog, path, collector={}) {
+function gatherParameters(ept, catalog, collector={}, flatten, prefix) {
 	return ept.asJSON.nodes.reduce((result, {id, ownId}) => {
 		let node = catalog[id];
 		if (!node) {
 			throw new Error(`Unable to find EPT (ID: ${id}, OwnID: ${ownId})`);
 		}
-		let localPath = `${path}${path ? '|' : ''}${ownId}`;
+
+		let pr = prefix ? `${prefix}.${ownId}` : ownId;
 
 		if (node.type === policyTypes.basic) {
 			result[ownId] = {
 				label: node.data.label,
 				parameters: node.data.parameters
-				// parameters: _prefixParameters(localPath, node.data.parameters)
 			};
+			listKeysIn(node.data.parameters, pr, flatten);
 			return result;
 		}
 
 		let json = node.asJSON;
 		if (json) {
-			result[ownId] = gatherParameters(node, catalog, localPath, {
+			result[ownId] = {
 				label: node.data.label,
-				parameters: json.parameters
-				// parameters: _prefixParameters(localPath, json.parameters)
-			});
+				parameters: json.parameters,
+				children: gatherParameters(node, catalog, {}, flatten, pr)
+			};
+			listKeysIn(json.parameters, pr, flatten);
 		}
 		return result;
 	}, collector);
 }
 
 export class PolicyForm {
+	fullCatalog = {};
+
 	constructor(policy, callback=() => {}, isReadonly=false) {
 		this.callback = callback;
 
 		this.policy = policy;
-		this.data = clonePolicy(policy.data);
 		this.isReadonly = isReadonly;
 
 		// Rebuild full EPTs catalog to include newly cloned ones (uncommitted)
-		let fullCatalog = storage.get(Policy.name, []).reduce((result, ept) => {
+		this.fullCatalog = storage.get(Policy.name, []).reduce((result, ept) => {
 			result[ept.ownId] = ept;
 			return result;
 		}, {});
-		console.log(fullCatalog);
-		let p = gatherParameters(policy, fullCatalog, policy.ownId);
-		console.log('Parameters gathered:', p);
+
+		let flatten = {};
+		this.parameters = {
+			label: policy.data.label,
+			parameters: policy.data.parameters,
+			children: gatherParameters(policy, this.fullCatalog, {}, flatten)
+		};
+
+		this.data = clonePolicy(policy.data);
+		this.data.parameters = Object.assign(flatten, this.policy.data.parameters);
+	}
+
+	renderChildrenParameters(ownId, children, container, prevParameters) {
+		let ul = document.createElement('ul');
+		
+		Object.keys(children || {}).forEach(id => {
+			let child = children[id];
+
+			let li = document.createElement('li');
+			let label = document.createElement('h2');
+			label.innerText = child.label + ` (${id})`;
+			ul.appendChild(label);
+
+			Object.keys(child.parameters || {}).forEach(paramKey => {
+				let key = `${id}.${paramKey}`;
+				if (!child.parameters[paramKey]) {
+					this._appendInput(paramKey, key, prevParameters[key] || '', ul);
+				}
+			});
+			// Recursive view for nested parameters is not needed
+			// this.renderChildrenParameters(`${ownId}.${id}`, child.children, ul, child.parameters);
+		});
+
+		container.appendChild(ul);
 	}
 
 	_updateParameter(input) {
 		let {name, value} = input;
 		this.data.parameters[name] = value;
+		this.renderJson();
 	}
 
-	_appendInput(name, value) {
-		let div = document.createElement('div')
+	_appendInput(labelText, name, value, container) {
+		let li = document.createElement('li')
 
 		let label = document.createElement('label');
 		label.htmlFor = name;
-		label.innerText = name;
+		label.innerText = labelText;
 
 		let input = document.createElement('input');
 		input.id = name;
 		input.name = name;
 		input.value = value;
 		input.onchange = () => this._updateParameter(input);
-		if (this.isReadonly || (value && ![policyTypes.cloned, policyTypes.new].includes(this.policy.type))) {
-			input.setAttribute('disabled', 'true');
-		}
 
 		label.appendChild(input);
-		div.appendChild(label);
+		li.appendChild(label);
 
-		placeholder.appendChild(div);
+		container.appendChild(li);
+	}
+
+	updateNodesValidity() {
+		(this.policy.asJSON.nodes || []).forEach(json => {
+			let node = this.fullCatalog[json.ownId];
+			if (!node) {
+				throw Error(`Unable to find node ${json.ownId} in the catalog`);
+			}
+			console.log('Validate', node);
+			let hasErrors = node.validatePolicyParameters(node.data, json.ownId, this.data.parameters);
+			if (hasErrors !== node.hasErrors) {
+				node.hasErrors = hasErrors;
+				node.render();
+			}
+		});
+	}
+
+	renderJson() {
+		this.pre0.innerText = JSON.stringify(this.data.parameters, null, 2);
+		this.pre1.innerText = JSON.stringify(this.policy.data.parameters, null, 2);
+		this.pre2.innerText = JSON.stringify(this.parameters, null, 2);
+		this.pre3.innerText = JSON.stringify(this.policy.asJSON, null, 2);
 	}
 
 	render() {
@@ -104,11 +162,34 @@ export class PolicyForm {
 			placeholder.appendChild(title);
 		}
 
-		Object.keys(this.data.parameters || {}).forEach(name => this._appendInput(name, this.data.parameters[name]));
+		this.renderChildrenParameters(this.policy.ownId, this.parameters.children, placeholder, this.parameters.parameters);
 
 		let commitButton = document.createElement('button');
 		commitButton.innerText = 'Commit Changes';
-		commitButton.onclick = () => this.callback(clonePolicy(this.data));
+		commitButton.onclick = () => {
+			this.callback(clonePolicy(this.data));
+			this.updateNodesValidity();
+			this.renderJson();
+		};
 		placeholder.appendChild(commitButton);
+
+		let debug = document.getElementById('debug');
+		debug.innerHTML = '';
+		this.pre0 = document.createElement('pre');
+		this.pre1 = document.createElement('pre');
+		this.pre2 = document.createElement('pre');
+		this.pre3 = document.createElement('pre');
+		debug.append(
+			document.createTextNode('this.data.parameters (Form data)'),
+			this.pre0, 
+			document.createTextNode('this.policy.data.parameters (Active EPT)'),
+			this.pre1, 
+			document.createTextNode('this.parameters (Gathered on init)'),
+			this.pre2,
+			document.createTextNode('this.policy.asJSON (asJSON)'),
+			this.pre3,
+		);
+		this.renderJson();
+		
 	}
 }

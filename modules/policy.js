@@ -37,9 +37,12 @@ export const fromJSON = (json, availablePolicies) => {
 		if ([policyTypes.basic, policyTypes.custom].includes(p.type)) type = policyTypes.reference;
 		if (p.type === policyTypes.clonedCustom) type = policyTypes.cloned;
 		let result = p.clone(type);
+
 		result.position = json.position;
 		result.id = json.id;
 		result.ownId = json.ownId;
+		result.asJSON.parameters = json.parameters;
+		result.data.parameters = json.parameters;
 		return result;
 	} else {
 		console.log(json, availablePolicies);
@@ -49,9 +52,9 @@ export const fromJSON = (json, availablePolicies) => {
 
 export class Policy extends Draggable {
 	type;
-	hasErrors = false;
+	hasErrors = true;
 	asJSON = {nodes: [], links: [], parameters: {}};
-
+	data = {};
 	input = null;
 	output = null;
 
@@ -61,7 +64,7 @@ export class Policy extends Draggable {
 		super(position);
 		this.paper = paper;
 		this.data = clonePolicy(data);
-		this.validatePolicyParameters(this.data);
+		this.hasErrors = this.validatePolicyParameters(this.data); 
 		this.type = type;
 		if ([policyTypes.basic, policyTypes.clonedCustom].includes(type)) {
 			this.ownId = this.id;
@@ -79,6 +82,7 @@ export class Policy extends Draggable {
 		return {
 			id: this.id,
 			ownId: this.ownId,
+			parameters: Object.assign({}, this.data.parameters),
 			position: this.position
 		};
 	}
@@ -97,8 +101,10 @@ export class Policy extends Draggable {
 		return p;
 	}
 
-	validatePolicyParameters(data) {
-		this.hasErrors = Object.keys(data.parameters || {}).some(parameter => !data.parameters[parameter]);
+	validatePolicyParameters(data, prefix=null, topParameters={}) {
+		return Object.keys(data.parameters || {}).some(parameter => 
+			!data.parameters[parameter] && (!prefix || !topParameters[`${prefix}.${parameter}`])
+		);
 	}
 
 	addConnectionPoint(y, type, isStatic, isMulti, acceptedTypes) {
@@ -132,7 +138,8 @@ export class Policy extends Draggable {
 				.click(() => {
 					new PolicyForm(this, data => {
 						this.data = data;
-						this.validatePolicyParameters(data);
+						this.asJSON.parameters = data.parameters;
+						// this.validatePolicyParameters(data, this);
 						this.render();
 					},
 					true)
@@ -187,7 +194,7 @@ export class Policy extends Draggable {
 			this.addExtras();
 		}
 		this.rect.attr('fill', this._determineColor());
-		this.text.attr('text', this._splitTitle(this.data.label) + ` (#${this.id})`);
+		this.text.attr('text', this._splitTitle(this.data.label));
 		super.render();
 		return this.group;
 	}
