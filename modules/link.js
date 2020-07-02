@@ -9,6 +9,9 @@ export class Link {
 		this.from = from;
 		this.to = to;
 		this.curve = null;
+		
+		this.from.onLinkChange();
+		this.to.onLinkChange();
 	}
 
 	destructor() {

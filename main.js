@@ -26,7 +26,7 @@ function updateConnectionTypes(cp) {
 	let max = 0;
 	let counted = cp.linkedWith.reduce((result, entity) => {
 		if (entity instanceof Link) {
-			(entity.from === cp ? entity.to : entity.from).types.forEach(type => {
+			((entity.from === cp ? entity.to : entity.from).types || []).forEach(type => {
 				let count = result[type] + 1 || 1;
 				result[type] = count;
 				if (count > max) max = count;
