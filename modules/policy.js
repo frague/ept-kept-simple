@@ -128,12 +128,12 @@ export class Policy extends Draggable {
 		this.output = this.addConnectionPoint(y + policyHeight, connectionPointTypes.out, false, true, [this.data.output_type]);
 
 		this.group.push(
-			this.paper.image('/images/close.png', x + policyWidth - 12, y + 4, 8, 8)
+			this.paper.image('./images/close.png', x + policyWidth - 12, y + 4, 8, 8)
 				.attr('cursor', 'hand')
 				.click(() => {
 					this.destructor();
 				}),
-			this.paper.image('/images/settings.png', x + policyWidth - 13, y + 17, 10, 10)
+			this.paper.image('./images/settings.png', x + policyWidth - 13, y + 17, 10, 10)
 				.attr('cursor', 'hand')
 				.click(() => {
 					new PolicyForm(this, data => {
