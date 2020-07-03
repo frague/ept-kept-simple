@@ -8,12 +8,18 @@ export const clearForm = () => {
 };
 
 function listKeysIn(source, prefix, destination) {
+	// Accumulating parameters top-to-bottom level
+	// in flatten key-value format. 
 	Object.keys(source).forEach(key => {
 		let pkey = `${prefix}.${key}`;
 		if (source[key]) {
+			// If a parameter has been
+			// set on the lower level - it should be removed from 
+			// the resulting set
 			delete destination[pkey];
 		} else {
-			destination[pkey] = source[key];
+			// otherwise it should be proxied to the top
+			destination[pkey] = '';
 		}
 	});
 }
@@ -40,7 +46,7 @@ function gatherParameters(ept, catalog, collector={}, flatten, prefix) {
 		if (json) {
 			result[ownId] = {
 				label: node.data.label,
-				parameters: json.parameters,
+				parameters: node.data.parameters,
 				children: gatherParameters(node, catalog, {}, flatten, pr)
 			};
 			listKeysIn(json.parameters, pr, flatten);
@@ -64,8 +70,10 @@ export class PolicyForm {
 			return result;
 		}, {});
 
+		// Walking the catalog in order to gather the real parameters set 
+		// on the children
 		let flatten = {};
-		this.parameters = {
+		this.formParameters = {
 			label: policy.data.label,
 			parameters: policy.data.parameters,
 			children: gatherParameters(policy, this.fullCatalog, {}, flatten)
@@ -124,14 +132,21 @@ export class PolicyForm {
 		container.appendChild(li);
 	}
 
+	// Updates validity status of the top level of child 
+	// EPTs
 	updateNodesValidity() {
-		(this.policy.asJSON.nodes || []).forEach(json => {
-			let node = this.fullCatalog[json.ownId];
+		// console.log('Update nodes validity:');
+		let children = this.formParameters.children;
+		Object.keys(children || {}).forEach(ownId => {
+			let node = this.fullCatalog[ownId];
 			if (!node) {
-				throw Error(`Unable to find node ${json.ownId} in the catalog`);
+				throw Error(`Unable to find node ${ownId} in the catalog`);
 			}
-			console.log('Validate', node);
-			let hasErrors = node.validatePolicyParameters(node.data, json.ownId, this.data.parameters);
+			// Update each child node's parameters based on the
+			// gathered information
+			node.data.parameters = children[ownId].parameters;
+			let hasErrors = node.validatePolicyParameters(ownId, this.data.parameters);
+			// console.log('Validity:', node.ownId, !hasErrors);
 			if (hasErrors !== node.hasErrors) {
 				node.hasErrors = hasErrors;
 				node.render();
@@ -142,7 +157,7 @@ export class PolicyForm {
 	renderJson() {
 		this.pre0.innerText = JSON.stringify(this.data.parameters, null, 2);
 		this.pre1.innerText = JSON.stringify(this.policy.data.parameters, null, 2);
-		this.pre2.innerText = JSON.stringify(this.parameters, null, 2);
+		this.pre2.innerText = JSON.stringify(this.formParameters, null, 2);
 		this.pre3.innerText = JSON.stringify(this.policy.asJSON, null, 2);
 	}
 
@@ -162,7 +177,7 @@ export class PolicyForm {
 			placeholder.appendChild(title);
 		}
 
-		this.renderChildrenParameters(this.policy.ownId, this.parameters.children, placeholder, this.parameters.parameters);
+		this.renderChildrenParameters(this.policy.ownId, this.formParameters.children, placeholder, this.formParameters.parameters);
 
 		let commitButton = document.createElement('button');
 		commitButton.innerText = 'Commit Changes';
@@ -184,7 +199,7 @@ export class PolicyForm {
 			this.pre0, 
 			document.createTextNode('this.policy.data.parameters (Active EPT)'),
 			this.pre1, 
-			document.createTextNode('this.parameters (Gathered on init)'),
+			document.createTextNode('this.formParameters (Gathered on init)'),
 			this.pre2,
 			document.createTextNode('this.policy.asJSON (asJSON)'),
 			this.pre3,

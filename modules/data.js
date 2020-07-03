@@ -30,13 +30,15 @@ export var basic_epts = [
 			'IPv6': ''
 		},
 		'input_types': ['interface', 'subinterface'],
-		'output_type': 'interface',
+		'output_type': 'routable interface',
 	},
 	{
 		'label': 'BGP unnumbered',
 		'tags': [],
 		'node': '',
-		'parameters': {},
+		'parameters': {
+			'timeout': ''
+		},
 		'input_types': ['interface', 'subinterface'],
 		'output_type': 'interface',
 	},
@@ -44,8 +46,10 @@ export var basic_epts = [
 		'label': 'Routing policy',
 		'tags': [],
 		'node': '',
-		'parameters': {},
-		'input_types': ['any'],
-		'output_type': 'interface',
+		'parameters': {
+			'import/export': ''
+		},
+		'input_types': ['routable interface'],
+		'output_type': 'routing session',
 	},
 ]

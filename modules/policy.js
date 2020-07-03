@@ -64,7 +64,7 @@ export class Policy extends Draggable {
 		super(position);
 		this.paper = paper;
 		this.data = clonePolicy(data);
-		this.hasErrors = this.validatePolicyParameters(this.data); 
+		this.hasErrors = this.validatePolicyParameters(); 
 		this.type = type;
 		if ([policyTypes.basic, policyTypes.clonedCustom].includes(type)) {
 			this.ownId = this.id;
@@ -101,10 +101,15 @@ export class Policy extends Draggable {
 		return p;
 	}
 
-	validatePolicyParameters(data, prefix=null, topParameters={}) {
-		return Object.keys(data.parameters || {}).some(parameter => 
-			!data.parameters[parameter] && (!prefix || !topParameters[`${prefix}.${parameter}`])
-		);
+	validatePolicyParameters(prefix=null, topParameters={}) {
+		console.log('Validate node', this.ownId, topParameters);
+		let myParameters = this.data.parameters;
+		return Object.keys(myParameters || {}).some(parameter => {
+			let isOwnSet = myParameters[parameter];
+			let isTopSet = prefix && topParameters[`${prefix}.${parameter}`];
+			console.log('> ', parameter, myParameters[parameter], topParameters[`${prefix}.${parameter}`]);
+			return !isOwnSet && !isTopSet;
+		});
 	}
 
 	addConnectionPoint(y, type, isStatic, isMulti, acceptedTypes) {
@@ -139,7 +144,6 @@ export class Policy extends Draggable {
 					new PolicyForm(this, data => {
 						this.data = data;
 						this.asJSON.parameters = data.parameters;
-						// this.validatePolicyParameters(data, this);
 						this.render();
 					},
 					true)

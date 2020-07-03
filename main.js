@@ -39,16 +39,21 @@ function updateConnectionTypes(cp) {
 	cp.render();
 }
 
+// Called after the new EPT has been saved. 
 function cleanup(isNew=false) {
 	Array.from(storage.get('Policy', [])).forEach(policy => {
 		if ([policyTypes.reference, policyTypes.cloned].includes(policy.type)) {
+			// All the reference EPTs should be fully destructed
 			policy.destructor()
 		} else if (isNew && policy.type === policyTypes.clonedCustom) {
+			// New cloned EPTs should be kept in catalog for the future referencing
 			keepPolicyInCatalog(policy);
 		}
 	});
 }
 
+// EPTs that are used for the referencing during the new EPTs creation
+// [basic, custom, clonedCustom] are kept separately from the main set
 function keepPolicyInCatalog(policy) {
 	let availablePolicies = storage.get('available_policies', {});
 	let exists = availablePolicies.hasOwnProperty(policy.id);
@@ -57,6 +62,9 @@ function keepPolicyInCatalog(policy) {
 	return exists;
 }
 
+// EPT serialization into json 
+// Note, that 'parameters' here will not be regenerated automatically
+// upon children parametrization changing
 function gatherJSON(ept) {
 	ept.asJSON = {
 		nodes: storage.get('Policy', [])
@@ -80,6 +88,7 @@ function pushPolicy(ept) {
 	if (!keepPolicyInCatalog(ept)) policyIndex++;
 }
 
+// Creates action links for the EPT (view, reference, clone)
 function createEptLink(title, ept, handler) {
 	let li = document.createElement('li');
 	li.innerText = title;
@@ -96,7 +105,7 @@ function randomizePosition(ept) {
 }
 
 // Print list of EPTs stored in catalog
-function printEtps(paper) {
+function printEpts(paper) {
 	var container = document.getElementById('ept-list');
 	container.innerHTML = '';
 
@@ -110,7 +119,7 @@ function printEtps(paper) {
 
 		let links = document.createElement('ul');
 		links.appendChild(createEptLink(
-			'Insert', p, 
+			'Reference', p, 
 			ept => randomizePosition(ept.clone(policyTypes.reference)).render()
 		));
 
@@ -138,7 +147,7 @@ function printEtps(paper) {
 					// Recreate nodes
 					let nodes = (ept.asJSON.nodes || []).reduce((result, data) => {
 						let p = fromJSON(data, availablePolicies);
-						p.hasErrors = p.validatePolicyParameters(p.data, p.ownId, ept.data.parameters);
+						p.hasErrors = p.validatePolicyParameters(p.ownId, ept.data.parameters);
 						p.render();
 						result[p.ownId] = p;
 						return result;
@@ -156,6 +165,30 @@ function printEtps(paper) {
 							console.log(e);
 						}
 					});
+
+					// Revalidate EPTs
+					let keptParameters = Object.assign({}, ept.data.parameters);
+					ept.data.parameters = {};
+					let form = new PolicyForm(ept, () => {});
+					let calculatedParameters = form.data.parameters;
+
+					console.log('Own: ', keptParameters);
+					console.log('Calculated: ', calculatedParameters);
+					// Remove own parameters that were defined on the lower levels
+					Object.keys(calculatedParameters).forEach(key => {
+						if (calculatedParameters[key] && keptParameters[keys]) delete keptParameters[key];
+					});
+					// Remove own parameters that are no longer exposed from the lower levels
+					Object.keys(keptParameters).forEach(key => {
+						if (!calculatedParameters.hasOwnProperty(key)) delete keptParameters[key];
+					});
+					// Combine both sets
+					ept.data.parameters = Object.assign(calculatedParameters, keptParameters);
+					console.log('Resulting: ', ept.data.parameters);
+
+					form.data.parameters = Object.assign({}, ept.data.parameters);
+					gatherJSON(ept);
+					form.updateNodesValidity();
 				})
 			);
 		}
@@ -191,7 +224,6 @@ window.onload = () => {
 		.attr('cursor', 'hand')
 		.click(() => {
 			gatherJSON(window.policy);
-			// gatherUnsetParameters();
 			new PolicyForm(window.policy, data => {
 				window.policy.data = data;
 				document.getElementById('ept-label').innerText = data.label;
@@ -207,15 +239,20 @@ window.onload = () => {
 				'input_types': input.types,
 				'output_type': output.types.length ? output.types[0] : null
 			});
+
+			gatherJSON(ept);
+			ept.data = clonePolicy(new PolicyForm(ept, () => {}).data);
+
 			if (ept.type === policyTypes.new) {
 				ept.type = policyTypes.custom;
 				ept.id = ept.ownId;		// No references to this ID exist
 			}
+			
 			pushPolicy(ept);
 			cleanup(true);
 			initNewPolicy(paper);
 			clearForm();
-			printEtps(paper);
+			printEpts(paper);
 		});
 
 	// Wipe out button
@@ -233,6 +270,6 @@ window.onload = () => {
 		if (data.id) p.id = data.id;
 		pushPolicy(p);
 	});
-	printEtps();
+	printEpts();
 	initNewPolicy(paper);
 };
