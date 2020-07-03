@@ -102,12 +102,12 @@ export class Policy extends Draggable {
 	}
 
 	validatePolicyParameters(prefix=null, topParameters={}) {
-		console.log('Validate node', this.ownId, topParameters);
+		// console.log('Validate node', this.ownId, topParameters);
 		let myParameters = this.data.parameters;
 		return Object.keys(myParameters || {}).some(parameter => {
 			let isOwnSet = myParameters[parameter];
 			let isTopSet = prefix && topParameters[`${prefix}.${parameter}`];
-			console.log('> ', parameter, myParameters[parameter], topParameters[`${prefix}.${parameter}`]);
+			// console.log('> ', parameter, myParameters[parameter], topParameters[`${prefix}.${parameter}`]);
 			return !isOwnSet && !isTopSet;
 		});
 	}

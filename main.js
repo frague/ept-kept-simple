@@ -213,7 +213,7 @@ window.onload = () => {
 	window.inputPoint = input;
 	paper.text(middle + radius + 5, 18, 'Input').attr('text-anchor', 'start');
 
-	let output = new ConnectionPoint(paper, {x: middle, y: canvasHeight - 20}, connectionPointTypes.in, false, false, ['any']);
+	let output = new ConnectionPoint(paper, {x: middle, y: canvasHeight - 20}, connectionPointTypes.in, false, true, ['any']);
 	output.onLinkChange = () => updateConnectionTypes(output);
 	output.render();
 	window.outputPoint = output;
