@@ -4,6 +4,7 @@ import { Link } from './modules/link.js';
 import { ConnectionPoint, connectionPointTypes, radius } from './modules/connection_point.js';
 import { PolicyForm, clearForm } from './modules/policy_form.js';
 import { storage } from './modules/storage.js';
+import { CloningForm } from './modules/cloning_form.js';
 
 function initNewPolicy(paper) {
 	window.policy = new Policy(
@@ -128,10 +129,12 @@ function printEpts(paper) {
 				createEptLink(
 					'Clone', p, 
 					ept => {
-						let clone = ept.clone(policyTypes.clonedCustom);
-						let reference = clone.clone(policyTypes.cloned);
-						reference.id = clone.id;
-						randomizePosition(reference).render();
+						let cloningForm = new CloningForm(ept, (clone) => {
+							let reference = clone.clone(policyTypes.cloned);
+							reference.id = clone.id;
+							randomizePosition(reference).render();
+						});
+						cloningForm.render();
 					}
 				),
 				createEptLink('View', p, (ept) => {
@@ -172,8 +175,8 @@ function printEpts(paper) {
 					let form = new PolicyForm(ept, () => {});
 					let calculatedParameters = form.data.parameters;
 
-					console.log('Own: ', keptParameters);
-					console.log('Calculated: ', calculatedParameters);
+					// console.log('Own: ', keptParameters);
+					// console.log('Calculated: ', calculatedParameters);
 					// Remove own parameters that were defined on the lower levels
 					Object.keys(calculatedParameters).forEach(key => {
 						if (calculatedParameters[key] && keptParameters[keys]) delete keptParameters[key];
@@ -184,7 +187,7 @@ function printEpts(paper) {
 					});
 					// Combine both sets
 					ept.data.parameters = Object.assign(calculatedParameters, keptParameters);
-					console.log('Resulting: ', ept.data.parameters);
+					// console.log('Resulting: ', ept.data.parameters);
 
 					form.data.parameters = Object.assign({}, ept.data.parameters);
 					gatherJSON(ept);
@@ -213,7 +216,7 @@ window.onload = () => {
 	window.inputPoint = input;
 	paper.text(middle + radius + 5, 18, 'Input').attr('text-anchor', 'start');
 
-	let output = new ConnectionPoint(paper, {x: middle, y: canvasHeight - 20}, connectionPointTypes.in, false, true, ['any']);
+	let output = new ConnectionPoint(paper, {x: middle, y: canvasHeight - 20}, connectionPointTypes.in, false, false, ['any']);
 	output.onLinkChange = () => updateConnectionTypes(output);
 	output.render();
 	window.outputPoint = output;

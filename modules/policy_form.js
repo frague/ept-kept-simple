@@ -1,7 +1,7 @@
 import { clonePolicy, policyTypes, Policy } from './policy.js';
 import { storage } from './storage.js';
 
-const placeholder = document.getElementById('forms');
+export const placeholder = document.getElementById('forms');
 
 export const clearForm = () => {
 	placeholder.innerHTML = '';
@@ -55,6 +55,14 @@ function gatherParameters(ept, catalog, collector={}, flatten, prefix) {
 	}, collector);
 }
 
+// Represents currently created EPTs as a dictionary with ownId as keys
+export const buildEptCatalog = () => {
+	return storage.get(Policy.name, []).reduce((result, ept) => {
+		result[ept.ownId] = ept;
+		return result;
+	}, {});
+}
+
 export class PolicyForm {
 	fullCatalog = {};
 
@@ -65,10 +73,7 @@ export class PolicyForm {
 		this.isReadonly = isReadonly;
 
 		// Rebuild full EPTs catalog to include newly cloned ones (uncommitted)
-		this.fullCatalog = storage.get(Policy.name, []).reduce((result, ept) => {
-			result[ept.ownId] = ept;
-			return result;
-		}, {});
+		this.fullCatalog = buildEptCatalog();
 
 		// Walking the catalog in order to gather the real parameters set 
 		// on the children
@@ -164,6 +169,8 @@ export class PolicyForm {
 	render() {
 		if (!placeholder) return;
 		clearForm();
+		placeholder.className = 'ept';
+
 
 		if ([policyTypes.reference, policyTypes.basic].includes(this.policy.type)) {
 			let title = document.createElement('h1');

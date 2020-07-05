@@ -96,7 +96,11 @@ export class Policy extends Draggable {
 			p.id = this.id;
 		} else if (type === policyTypes.clonedCustom) {
 			p.ownId = p.id;
-			p.asJSON = this.asJSON;
+			p.asJSON = {
+				nodes: [...this.asJSON.nodes],
+				links: [...this.asJSON.links],
+				parameters: Object.assign({}, this.asJSON.parameters)
+			};
 		}
 		return p;
 	}
@@ -138,17 +142,17 @@ export class Policy extends Draggable {
 				.click(() => {
 					this.destructor();
 				}),
-			this.paper.image('./images/settings.png', x + policyWidth - 13, y + 17, 10, 10)
-				.attr('cursor', 'hand')
-				.click(() => {
-					new PolicyForm(this, data => {
-						this.data = data;
-						this.asJSON.parameters = data.parameters;
-						this.render();
-					},
-					true)
-						.render();
-				})
+			// this.paper.image('./images/settings.png', x + policyWidth - 13, y + 17, 10, 10)
+			// 	.attr('cursor', 'hand')
+			// 	.click(() => {
+			// 		new PolicyForm(this, data => {
+			// 			this.data = data;
+			// 			this.asJSON.parameters = data.parameters;
+			// 			this.render();
+			// 		},
+			// 		true)
+			// 			.render();
+			// 	})
 		);
 	}
 
