@@ -4,7 +4,7 @@ import { PolicyForm } from './policy_form.js';
 
 const titleMaxWidth = 150;
 export const policyWidth = 150;
-export const policyHeight = 30;
+export const policyHeight = 40;
 const charWidth = 6;
 
 export const policyTypes = {
@@ -175,7 +175,7 @@ export class Policy extends Draggable {
     _determineColor() {
     	let color = policyTypesColors[this.type];
     	if (this.hasErrors) {
-    		color = '#FAA';
+    		color = '#e58f96';
     	}
     	return color;
     }
@@ -195,7 +195,10 @@ export class Policy extends Draggable {
 			this.rect = this.paper.rect(x, y, policyWidth, policyHeight)
 				.attr('stroke', '#000');
 			this.text = this.paper.text(x + 5, y + policyHeight / 2, this._splitTitle(this.data.label))
-				.attr('text-anchor', 'start');
+				.attr({
+					'text-anchor': 'start',
+					'font-size': '13px'
+				});
 			this.group.push(this.rect, this.text);
 			this.makeDraggable(this.group);
 

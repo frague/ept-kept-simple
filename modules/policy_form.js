@@ -7,6 +7,8 @@ export const clearForm = () => {
 	placeholder.innerHTML = '';
 };
 
+const showDebug = false;
+
 function listKeysIn(source, prefix, destination) {
 	// Accumulating parameters top-to-bottom level
 	// in flatten key-value format. 
@@ -177,11 +179,15 @@ export class PolicyForm {
 			title.innerText = this.data.label;
 			placeholder.appendChild(title);
 		} else {
-			let title = document.createElement('input');
-			title.id = 'label';
-			title.value = this.data.label;
-			title.onchange = () => this.data.label = title.value;
+			let title = document.createElement('h1');
+			title.innerText = 'Parameters';
 			placeholder.appendChild(title);
+
+			let label = document.createElement('input');
+			label.id = 'label';
+			label.value = this.data.label;
+			label.onchange = () => this.data.label = label.value;
+			placeholder.appendChild(label);
 		}
 
 		this.renderChildrenParameters(this.policy.ownId, this.formParameters.children, placeholder, this.formParameters.parameters);
@@ -201,16 +207,18 @@ export class PolicyForm {
 		this.pre1 = document.createElement('pre');
 		this.pre2 = document.createElement('pre');
 		this.pre3 = document.createElement('pre');
-		debug.append(
-			document.createTextNode('this.data.parameters (Form data)'),
-			this.pre0, 
-			document.createTextNode('this.policy.data.parameters (Active EPT)'),
-			this.pre1, 
-			document.createTextNode('this.formParameters (Gathered on init)'),
-			this.pre2,
-			document.createTextNode('this.policy.asJSON (asJSON)'),
-			this.pre3,
-		);
+		if (showDebug) {
+			debug.append(
+				document.createTextNode('this.data.parameters (Form data)'),
+				this.pre0, 
+				document.createTextNode('this.policy.data.parameters (Active EPT)'),
+				this.pre1, 
+				document.createTextNode('this.formParameters (Gathered on init)'),
+				this.pre2,
+				document.createTextNode('this.policy.asJSON (asJSON)'),
+				this.pre3,
+			);
+		}
 		this.renderJson();
 		
 	}

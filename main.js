@@ -204,7 +204,7 @@ function printEpts(paper) {
 
 window.onload = () => {
 	// Initialize the canvas
-	let paper = Raphael(200, 40, '600px', '600px');
+	let paper = Raphael(330, 190, '600px', '600px');
 	let canvasWidth = paper.canvas.clientWidth;
 	let canvasHeight = paper.canvas.clientHeight;
 
@@ -223,7 +223,7 @@ window.onload = () => {
 	paper.text(middle + radius + 5, canvasHeight - 20, 'Output').attr('text-anchor', 'start');
 
 	// New EPTs settings button with handler
-	paper.image('./images/settings.png', 30, 0, 15, 15)
+	paper.image('./images/settings.png', 10, 0, 15, 15)
 		.attr('cursor', 'hand')
 		.click(() => {
 			gatherJSON(window.policy);
@@ -234,7 +234,7 @@ window.onload = () => {
 		});
 
 	// New EPTs save button with handler
-	paper.image('./images/save.png', 50, 0, 15, 15)
+	paper.image('./images/save.png', 30, 0, 15, 15)
 		.attr('cursor', 'hand')
 		.click(() => {
 			let ept = window.policy;
@@ -259,7 +259,7 @@ window.onload = () => {
 		});
 
 	// Wipe out button
-	paper.image('./images/refresh.png', 70, 0, 15, 15)
+	paper.image('./images/refresh.png', 50, 0, 15, 15)
 		.attr('cursor', 'hand')
 		.click(() => {
 			initNewPolicy(paper);

@@ -3,7 +3,7 @@ import { Draggable } from './draggable.js';
 import { storage } from './storage.js';
 import { Link } from './link.js';
 
-export const radius = 6;
+export const radius = 8;
 export const connectionPointTypes = {
 	'in': '#0F0',
 	'out': '#F00'

@@ -1,6 +1,8 @@
 import { placeholder, clearForm, buildEptCatalog } from './policy_form.js';
 import { policyTypes } from './policy.js';
 
+const showDebug = false;
+
 export class CloningForm {
 	eptsTree = {};
 
@@ -143,7 +145,7 @@ export class CloningForm {
 		placeholder.className = 'cloning';
 
 		let h1 = document.createElement('h1');
-		h1.innerText = `EPT "${this.ept.data.label}" cloning`;
+		h1.innerText = `"${this.ept.data.label}" Cloning`;
 		placeholder.appendChild(h1);
 
 		let container = document.createElement('ul');
@@ -181,10 +183,13 @@ export class CloningForm {
 		let debug = document.getElementById('debug');
 		debug.innerHTML = '';
 		this.pre0 = document.createElement('pre');
-		debug.append(
-			document.createTextNode('EPTs tree'),
-			this.pre0
-		);
+
+		if (showDebug) {
+			debug.append(
+				document.createTextNode('EPTs tree'),
+				this.pre0
+			);
+		}
 		this.renderJson();
 	}
 }

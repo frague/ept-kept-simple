@@ -1,21 +1,45 @@
 * {
-	font-family: Arial, Tahoma, Verdana;
+	font-family: Lato, Arial, Tahoma, Verdana;
+}
+
+body {
+	display: flex;
+	padding: 0;
+	margin: 0;
+}
+
+aside {
+  flex: 0 80px;
+  background: #09293b url(images/left.png) no-repeat;
+  height: 1024px;
+}
+
+article {
+  flex: 1;
+  background: url(images/top.png) no-repeat, url(images/top_background.png) repeat-x;
+  padding: 130px 30px 0 30px;
+  display: flex;
+  flex-direction: row;
 }
 
 h1 {
 	padding: 0;
 	margin: 0 0 10px 0;
-	font-size: 20px;
+	font-size: 2rem;
 	
 	&#ept-label {
-	    position: relative;
-	    left: 220px;
-	    top: 2px;
+	    // position: relative;
+	    // left: 220px;
+	    // top: 2px;
 	}
 }
 
 h2 {
 	font-size: 14px;
+}
+
+svg {
+	z-index: 200;
 }
 
 #pane {
@@ -39,19 +63,15 @@ text {
 	color: black;
 }
 
-
 section {
-	height: 600px;
-	position: absolute;
-	top: 0;
+	min-height: 600px;
 	padding: 10px;
 	z-index: 100;
 	border: solid 1px #888;
-	border-width: 0 1px;
+	border-width: 0;
 
 	&#epts {
-		width: 200px;
-		left: 0px;
+		flex: 0 200px;
 
 		ul {
 			padding-left: 0;
@@ -69,7 +89,7 @@ section {
 				}
 
 				&.basic span:after {
-					content: '(Basic)';
+					content: '(Primitive)';
 				}
 
 				&.custom span:after {
@@ -101,9 +121,12 @@ section {
 		}
 	}
 
+	&#graph {
+		flex: 0 575px;
+	}
+
 	&#forms {
-		width: 300px;
-		left: 830px;
+		flex: 0 250px;
 
 		ul {
 			padding-left: 0;
@@ -142,12 +165,6 @@ section {
 					font-size: 20px;
 				}
 			}
-
-			button {
-				margin: 20px 0 10px 0;
-				float: right;
-				padding: 6px;
-			}
 		}
 
 		&.cloning {
@@ -172,8 +189,10 @@ section {
 
 	}
 	&#debug {
-		width: 300px;
-		left: 1150px;
+		flex: 0 300px;
+
+		// width: 300px;
+		// left: 1150px;
 		border: none;
 
 		pre {
@@ -186,7 +205,15 @@ section {
 		}
 	}
 
+	button {
+		margin: 20px 0 10px 0;
+		float: right;
+		padding: 6px;
+	}
+
 	div {
 		margin-top: 10px;
 	}
 }
+
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@100;300;400;700;900&display=swap');
