@@ -2,7 +2,7 @@ import { basic_epts } from './modules/data.js';
 import { Policy, policyHeight, policyWidth, policyTypes, clonePolicy, fromJSON } from './modules/policy.js';
 import { Link } from './modules/link.js';
 import { ConnectionPoint, connectionPointTypes, radius } from './modules/connection_point.js';
-import { PolicyForm, clearForm } from './modules/policy_form.js';
+import { PolicyForm, clearForm, listKeysIn } from './modules/policy_form.js';
 import { storage } from './modules/storage.js';
 import { CloningForm } from './modules/cloning_form.js';
 
@@ -113,6 +113,8 @@ function printEpts(paper) {
 	let epts = storage.get('available_policies', {});
 	Object.keys(epts).forEach(id => {
 		let p = epts[id];
+		if (p.type === policyTypes.basic) return;
+
 		let li = document.createElement('li');
 		li.innerText = p.data.label;
 		li.className = p.type;
@@ -267,12 +269,27 @@ window.onload = () => {
 			clearForm();
 		});
 
-	// Create and render basic policies list from data.js
+	// Instantiate and render basic policies list from data.js
 	(basic_epts || []).forEach(data => {
-		let p = new Policy(paper, {x: 100, y: 100}, data, policyTypes.basic);
-		if (data.id) p.id = data.id;
+		let p = new Policy(paper, {x: 220, y: 230}, data, policyTypes.basic);
 		pushPolicy(p);
+
+		let clone = p.clone(policyTypes.custom);
+		clone.id = clone.ownId;
+		clone.asJSON = {
+			nodes: [
+				p.toJSON()
+			],
+			links: [
+				[null, p.ownId],
+				[p.ownId, null]
+			],
+			parameters: {}
+		};
+		listKeysIn(data.parameters, clone.ownId, clone.asJSON.parameters);
+		console.log(clone);
+		if (!keepPolicyInCatalog(clone)) policyIndex++;
 	});
-	printEpts();
+	printEpts(paper);
 	initNewPolicy(paper);
 };

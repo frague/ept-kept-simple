@@ -9,7 +9,7 @@ export const clearForm = () => {
 
 const showDebug = false;
 
-function listKeysIn(source, prefix, destination) {
+export const listKeysIn = (source, prefix, destination) => {
 	// Accumulating parameters top-to-bottom level
 	// in flatten key-value format. 
 	Object.keys(source).forEach(key => {
