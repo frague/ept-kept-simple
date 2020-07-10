@@ -16,7 +16,8 @@ export var basic_epts = [
 		'tags': [],
 		'node': '',
 		'parameters': {
-			'vlan_id': ''
+			'vlan_id': '',
+			'tagged/untagged': ''
 		},
 		'input_types': ['interface'],
 		'output_type': 'interface',
@@ -29,7 +30,7 @@ export var basic_epts = [
 			'IPv4': '',
 			'IPv6': ''
 		},
-		'input_types': ['interface', 'subinterface'],
+		'input_types': ['interface'],
 		'output_type': 'routable interface',
 	},
 	{
@@ -39,8 +40,8 @@ export var basic_epts = [
 		'parameters': {
 			'timeout': ''
 		},
-		'input_types': ['interface', 'subinterface'],
-		'output_type': 'interface',
+		'input_types': ['routable interface'],
+		'output_type': 'routing session',
 	},
 	{
 		'label': 'Routing policy',
@@ -49,7 +50,7 @@ export var basic_epts = [
 		'parameters': {
 			'import/export': ''
 		},
-		'input_types': ['routable interface'],
-		'output_type': 'routing session',
+		'input_types': ['routing session'],
+		'output_type': 'routing policy',
 	},
 ]
