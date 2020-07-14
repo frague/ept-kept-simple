@@ -9,65 +9,23 @@ export const clearForm = () => {
 
 const showDebug = true;
 
+
+// @obsolete
 export const listKeysIn = (source, prefix, destination) => {
-	let dest = destination;
-	// if (prefix) {
-	// 	if (!destination.hasOwnProperty(prefix)) {
-	// 		destination[prefix] = {};
-	// 	}
-	// 	dest = destination[prefix];
-	// }
 	// Accumulating parameters top-to-bottom level
 	// in flatten key-value format. 
 	Object.keys(source).forEach(key => {
-		let pkey = prefix ? `${prefix}.${key}` : key;
-		// if (source[key]) {
-		// 	// If a parameter has been
-		// 	// set on the lower level - it should be removed from 
-		// 	// the resulting set
-		// 	delete dest[key];
-		// } else {
-		// 	// otherwise it should be proxied to the top
-		// 	dest[key] = '';
-		// }
-		dest[pkey] = source[key];
+		let pkey = `${prefix}.${key}`;
+		if (source[key]) {
+			// If a parameter has been
+			// set on the lower level - it should be removed from 
+			// the resulting set
+			delete destination[pkey];
+		} else {
+			// otherwise it should be proxied to the top
+			destination[pkey] = '';
+		}
 	});
-}
-
-function gatherParameters(ept, catalog, collector={}, flatten, prefix) {
-	if (ept.type === policyTypes.elementary) prefix = ept.id || ept.ownId;
-	return ept.asJSON.nodes.reduce((result, {id, ownId}) => {
-		let nextLevel = id || ownId;
-		let node = catalog[nextLevel];
-		if (!node) {
-			throw new Error(`Unable to find EPT (ID: ${id}, OwnID: ${ownId})`);
-		}
-
-		let pr = '';
-		if (node.type === policyTypes.basic) {
-			pr = prefix ? `${prefix}.${nextLevel}` : (nextLevel);
-			result[ownId] = {
-				label: node.data.label,
-				parameters: node.data.parameters
-			};
-			// listKeysIn(node.data.parameters, pr, flatten);
-			return result;
-		}
-
-		let json = node.asJSON;
-		if (json) {
-			result[nextLevel] = {
-				label: node.data.label,
-				parameters: {},
-				children: gatherParameters(node, catalog, {}, flatten, pr)
-			};
-			
-			if (node.type === policyTypes.elementary) {
-				listKeysIn(json.parameters, nextLevel, flatten);
-			}
-		}
-		return result;
-	}, collector);
 }
 
 // Represents currently created EPTs as a dictionary with ownId as keys
@@ -76,6 +34,39 @@ export const buildEptCatalog = () => {
 		result[ept.ownId] = ept;
 		return result;
 	}, {});
+}
+
+function gatherParameters(ept, catalog, collector={}, flatten, prefix) {
+	return ept.asJSON.nodes.reduce((result, {id, ownId}) => {
+		let nextId = id || ownId;
+		let node = catalog[nextId];
+		if (!node) {
+			throw new Error(`Unable to find EPT (ID: ${id}, OwnID: ${ownId})`);
+		}
+
+		if (node.type === policyTypes.basic) return {};
+
+		if (node.type === policyTypes.elementary) {
+			result[ownId] = {
+				label: node.data.label,
+				parameters: Object.entries(node.asJSON.parameters).reduce((result, [param, value]) => {
+					result[`${id}\t${param}`] = value;
+					return result;
+				}, {})
+			};
+			return result;
+		}
+
+		let json = node.asJSON;
+		if (json) {
+			result[ownId] = {
+				label: node.data.label,
+				parameters: {},
+				children: gatherParameters(node, catalog, {}, flatten)
+			};
+		}
+		return result;
+	}, collector);
 }
 
 export class PolicyForm {
@@ -89,67 +80,67 @@ export class PolicyForm {
 
 		// Rebuild full EPTs catalog to include newly cloned ones (uncommitted)
 		this.fullCatalog = buildEptCatalog();
-		console.log(this.fullCatalog);
-
-		// Walking the catalog in order to gather the real parameters set 
-		// on the children
-		let flatten = {};
-		this.formParameters = {
-			label: policy.data.label,
-			parameters: policy.data.parameters,
-			children: gatherParameters(policy, this.fullCatalog, {}, flatten)
-		};
-
-		this.data = clonePolicy(policy.data);
-		this.data.parameters = flatten;
+		this.collectParameters();
+		
+		this.data = clonePolicy(this.policy.data);
+		this.data.parameters = {};//Object.assign(flatten, this.policy.data.parameters);
 	}
 
-	renderParametersForm(container) {
+	collectParameters() {
+		// Walking the catalog in order to gather the real parameters set 
+		// on the children
+		// let flatten = {};
+		this.formParameters = {
+			label: this.policy.data.label,
+			parameters: this.policy.data.parameters,
+			children: gatherParameters(this.policy, this.fullCatalog, {})
+		};
+	}
+
+	renderChildrenParameters(ownId, children, container, prevParameters) {
 		let ul = document.createElement('ul');
-		let bucket = '';
+		
+		Object.keys(children || {}).forEach(id => {
+			let child = children[id];
 
-		Object.keys(this.data.parameters || {}).sort().forEach(path => {
-			console.log('Path', path);
+			let li = document.createElement('li');
+			let label = document.createElement('h2');
+			label.innerText = child.label + ` (${id})`;
+			ul.appendChild(label);
 
-			let [elementaryId, basicId, parameter] = path.split('.');
-
-			let elementary = this.fullCatalog[elementaryId].data.label;
-			let basic = this.fullCatalog[basicId].data.label;
-
-			if (bucket !== `${elementaryId}.${basicId}`) {
-				let li = document.createElement('li');
-				let label = document.createElement('h2');
-				label.innerText = `${elementary} (${basic})`;
-				ul.appendChild(label);
-				bucket = `${elementaryId}.${basicId}`;
-			}
-
-			this._appendInput(parameter, this.data.parameters[path], ul, elementaryId, basicId);
+			Object.entries(child.parameters || {}).forEach(([key, value]) => {
+				this._appendInput(key, value, ul);
+			});
+			this.renderChildrenParameters(`${ownId}.${id}`, child.children, ul, child.parameters);
 		});
 
 		container.appendChild(ul);
 	}
 
-	_updateParameter(input, elementaryId, basicId) {
-		let ept = this.fullCatalog[elementaryId];
-		if (!ept) throw new Error(`Unable to set parameters in ID:${elementaryId}`);
+	_updateParameter(input, ownerId) {
 		let {name, value} = input;
-		ept.asJSON.parameters[`${basicId}.${name}`] = value;
-		this.renderJson();
+		let ept = this.fullCatalog[ownerId];
+		if (!ept) {
+			throw new Error(`Unable to find EPT ${ownerId} in the catalog`);
+		}
+		ept.asJSON.parameters[name] = value;
+		this.applyChanges();
+		this.collectParameters();
+		this.render();
 	}
 
-	_appendInput(name, value, container, elementaryId, basicId) {
-		let li = document.createElement('li')
+	_appendInput(name, value, container) {
+		let li = document.createElement('li');
+		let [ownerId, title] = name.split('\t');
 
 		let label = document.createElement('label');
-		label.htmlFor = name;
-		label.innerText = name;
+		label.htmlFor = title;
+		label.innerText = title;
 
 		let input = document.createElement('input');
-		input.id = name;
-		input.name = name;
+		input.name = title;
 		input.value = value;
-		input.onchange = () => this._updateParameter(input, elementaryId, basicId);
+		input.onchange = () => this._updateParameter(input, ownerId);
 
 		label.appendChild(input);
 		li.appendChild(label);
@@ -186,6 +177,12 @@ export class PolicyForm {
 		this.pre3.innerText = JSON.stringify(this.policy.asJSON, null, 2);
 	}
 
+	applyChanges() {
+		this.callback(clonePolicy(this.data));
+		this.updateNodesValidity();
+		this.renderJson();
+	}
+
 	render() {
 		if (!placeholder) return;
 		clearForm();
@@ -204,20 +201,23 @@ export class PolicyForm {
 			let label = document.createElement('input');
 			label.id = 'label';
 			label.value = this.data.label;
-			label.onchange = () => this.data.label = label.value;
+			label.onchange = () => {
+				this.data.label = label.value;
+				this.applyChanges();
+			};
 			placeholder.appendChild(label);
 		}
 
-		this.renderParametersForm(placeholder);
+		this.renderChildrenParameters(this.policy.ownId, this.formParameters.children, placeholder, this.formParameters.parameters);
 
-		let commitButton = document.createElement('button');
-		commitButton.innerText = 'Commit Changes';
-		commitButton.onclick = () => {
-			this.callback(clonePolicy(this.data));
-			// this.updateNodesValidity();
-			this.renderJson();
-		};
-		placeholder.appendChild(commitButton);
+		// let commitButton = document.createElement('button');
+		// commitButton.innerText = 'Commit Changes';
+		// commitButton.onclick = () => {
+		// 	this.callback(clonePolicy(this.data));
+		// 	this.updateNodesValidity();
+		// 	this.renderJson();
+		// };
+		// placeholder.appendChild(commitButton);
 
 		let debug = document.getElementById('debug');
 		debug.innerHTML = '';

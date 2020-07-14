@@ -90,7 +90,7 @@ function createEptLink(title, ept, handler) {
 function randomizePosition(ept) {
 	let {x, y} = ept.position;
 	x = 230 + 50 * Math.sin(addingPosition);
-	y = 50 + addingPosition * (policyHeight + 40);
+	y = 60 + addingPosition * (policyHeight + 34);
 	ept.position = {x, y};
 	addingPosition++;
 	return ept;
@@ -265,10 +265,11 @@ window.onload = () => {
 				[null, nextId],
 				[nextId, null]
 			],
-			parameters: Object.entries(basicToJson.parameters).reduce((result, [key, value]) => {
-				result[`${p.ownId}.${key}`] = value;
-				return result;
-			}, {})
+			parameters: Object.assign({}, basicToJson.parameters)
+			// parameters: Object.entries(basicToJson.parameters).reduce((result, [key, value]) => {
+			// 	result[`${p.ownId}.${key}`] = value;
+			// 	return result;
+			// }, {})
 		};
 		clone.data.label += ' 1';
 		clone.save();
