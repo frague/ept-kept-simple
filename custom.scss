@@ -88,6 +88,10 @@ section {
 					color: #888;
 				}
 
+				&.unset {
+					color: red;
+				}
+
 				&.basic span:after {
 					content: '(Primitive)';
 				}

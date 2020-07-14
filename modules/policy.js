@@ -8,20 +8,18 @@ export const policyHeight = 40;
 const charWidth = 6;
 
 export const policyTypes = {
-	basic: 'basic',
-	cloned: 'cloned',
 	new: 'new',
-	reference: 'reference',
+	basic: 'basic',
+	elementary: 'elementary',
 	custom: 'custom',
-	clonedCustom: 'custom-cloned'
+	reference: 'reference',
 };
 
 export const policyTypesColors = {
 	[policyTypes.basic]: '#DDF', 
-	[policyTypes.cloned]: '#EEE', 
-	[policyTypes.new]: '#DFD',
-	[policyTypes.reference]: '#EFEFEF',
-	[policyTypes.custom]: '#888'
+	[policyTypes.elementary]: '#DDF', 
+	[policyTypes.reference]: '#DDF', 
+	[policyTypes.custom]: '#888',
 };
 
 export const clonePolicy = policy => {
@@ -31,13 +29,9 @@ export const clonePolicy = policy => {
 }
 
 export const fromJSON = (json, availablePolicies) => {
-	let p = availablePolicies[json.id];
+	let p = availablePolicies[json.id || json.ownId];
 	if (p) {
-		let type = p.type;
-		if ([policyTypes.basic, policyTypes.custom].includes(p.type)) type = policyTypes.reference;
-		if (p.type === policyTypes.clonedCustom) type = policyTypes.cloned;
-		let result = p.clone(type);
-
+		let result = p.clone(policyTypes.reference);
 		result.position = json.position;
 		result.id = json.id;
 		result.ownId = json.ownId;
@@ -46,7 +40,7 @@ export const fromJSON = (json, availablePolicies) => {
 		return result;
 	} else {
 		console.log(json, availablePolicies);
-		throw new Error('Unable to find EPT id=', json.id);
+		throw new Error(`Unable to find EPT id=${json.id}`);
 	}
 };
 
@@ -57,6 +51,8 @@ export class Policy extends Draggable {
 	data = {};
 	input = null;
 	output = null;
+	isSaved = false;
+	isCloned = false;
 
 	serialized = {};
 
@@ -66,16 +62,20 @@ export class Policy extends Draggable {
 		this.data = clonePolicy(data);
 		this.hasErrors = this.validatePolicyParameters(); 
 		this.type = type;
-		if ([policyTypes.basic, policyTypes.clonedCustom].includes(type)) {
-			this.ownId = this.id;
-		}
 	}
 
 	destructor(keepObject=false) {
 		super.destructor();
 		this.linkedWith.forEach(linked => linked.destructor());
-		if (this.isRendered) this.group.remove();
+		this.hide();
 		if (!keepObject) delete this;
+	}
+
+	hide() {
+		if (this.isRendered) {
+			this.group.remove();
+			this.isRendered = false;
+		}
 	}
 
 	toJSON() {
@@ -87,22 +87,64 @@ export class Policy extends Draggable {
 		};
 	}
 
-	clone(type) {
-		if (!type) {
-			throw new Error('Policy cloning with no type specified!');
+	clone(type=null, cloneReferences=false) {
+		let p = new Policy(this.paper, this.position, this.data, type || this.type);
+		let asJSON = {
+			nodes: [...this.asJSON.nodes],
+			links: [...this.asJSON.links],
+			parameters: Object.assign({}, this.asJSON.parameters)
+		};
+		if (cloneReferences) {
+			let oldOwnIds = {};
+			asJSON.nodes = asJSON.nodes.map(node => {
+				let ownId = node.ownId;
+				let newId;
+				let referenceId;
+				let update = {};
+				if (cloneReferences === true) {
+					// All references must be regenerated
+					newId = this.generateId();
+					update = {ownId: newId};
+				} else {
+					// Only supplied references must be regenerated
+					[newId, referenceId] = cloneReferences[ownId] || [ownId, node.id];
+					update = {id: referenceId, ownId: newId}
+				}
+				oldOwnIds[ownId] = newId;
+				return Object.assign({}, node, update);
+			});
+			asJSON.links = asJSON.links.map(([from, to]) => {
+				return [
+					oldOwnIds[from] || from,
+					oldOwnIds[to] || to
+				]
+			});
 		}
-		let p = new Policy(this.paper, this.position, this.data, type);
-		if (type === policyTypes.reference) {
-			p.id = this.id;
-		} else if (type === policyTypes.clonedCustom) {
-			p.ownId = p.id;
-			p.asJSON = {
-				nodes: [...this.asJSON.nodes],
-				links: [...this.asJSON.links],
-				parameters: Object.assign({}, this.asJSON.parameters)
-			};
-		}
+		p.asJSON = asJSON;
+		p.id = this.ownId;
+		p.isCloned = this.isCloned;
 		return p;
+	}
+
+	referTo() {
+		let result = this.clone(policyTypes.reference);
+		result.id = this.ownId;
+		return result;
+	}
+
+	save() {
+		switch (this.type) {
+			case policyTypes.new:
+				this.type = policyTypes.custom;
+				this.id = null;
+				break;
+			case policyTypes.basic:
+			case policyTypes.custom:
+			case policyTypes.elementary:
+				this.id = null;
+				break;
+		}
+		this.isSaved = true;
 	}
 
 	validatePolicyParameters(prefix=null, topParameters={}) {
@@ -184,7 +226,7 @@ export class Policy extends Draggable {
 		if (!this.isRendered) {
 			let {x, y} = this.position;
 			this.group = this.paper.set();
-			if (this.type === policyTypes.cloned) {
+			if (this.isCloned) {
 				let cRect = this.paper.rect(x + 4, y + 4, policyWidth, policyHeight)
 				.attr({
 			    	'fill': '#DDD',
@@ -206,6 +248,7 @@ export class Policy extends Draggable {
 		}
 		this.rect.attr('fill', this._determineColor());
 		this.text.attr('text', this._splitTitle(this.data.label));
+		// this.text.attr('text', this._splitTitle(this.data.label) + `-${this.id}/${this.ownId}`);
 		super.render();
 		return this.group;
 	}

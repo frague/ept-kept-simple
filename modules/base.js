@@ -1,6 +1,9 @@
 import { storage } from './storage.js';
 
 var instancesCounter = 0;
+export const generateId = () => {
+	return `ID${++instancesCounter}`;
+}
 
 export class Positioned {
 	position = {x: 0, y: 0};
@@ -8,7 +11,7 @@ export class Positioned {
 	linkedWith = [];
 
 	constructor(position) {
-		this.id = this.generateId();
+		this.id = null;
 		this.ownId = this.generateId();
 		this.position = position;
 		let className = this.constructor.name;
@@ -30,7 +33,7 @@ export class Positioned {
 	}
 
 	generateId() {
-		return `ID${++instancesCounter}`;
+		return generateId();
 		// return `${this.constructor.name}-${++instancesCounter}`;
 		// return `${this.constructor.name}-${Math.round(9999 * Math.random())}`;
 	}

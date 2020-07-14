@@ -1,7 +1,8 @@
 import { placeholder, clearForm, buildEptCatalog } from './policy_form.js';
 import { policyTypes } from './policy.js';
+import { generateId } from './base.js';
 
-const showDebug = false;
+const showDebug = true;
 
 export class CloningForm {
 	eptsTree = {};
@@ -21,20 +22,31 @@ export class CloningForm {
 	}
 
 	collectAndRenderChildren(ept, catalog, container) {
+		let defaultState = true;
+
 		return ept.asJSON.nodes.reduce((result, {id, ownId}) => {
-			let node = catalog[id];
+			let nextId = id || ownId;
+			let node = catalog[nextId];
 			if (!node) {
+				console.log('Catalog:', catalog);
 				throw new Error(`Unable to find EPT (ID: ${id}, OwnID: ${ownId})`);
 			}
 
+			if (node.type === policyTypes.basic) {
+				return {};
+			} else if (node.type === policyTypes.elementary) {
+				console.log('Elementary node: ', node);
+			}
+
 			let childrenContainer = document.createElement('ul');
-			childrenContainer.className = 'hidden';
+			childrenContainer.className = defaultState ? 'shown' : 'hidden';
 
 			let h3 = document.createElement('h3');
 
 			let cloningSelector = document.createElement('input');
 			cloningSelector.type = 'checkbox';
 			cloningSelector.disabled = node.type === policyTypes.basic;
+			cloningSelector.checked = defaultState ? 'checked' : '';
 			cloningSelector.onchange = ({target}) => {
 				let isChecked = target.checked;
 				childrenContainer.className = isChecked ? 'shown' : 'hidden';
@@ -49,10 +61,13 @@ export class CloningForm {
 			let eptCloningStatus = {
 				label: node.data.label,
 				type: node.type,
-				clone: false,
-				id: node.id,
+				clone: defaultState,
+				id: nextId,
 				checkbox: cloningSelector,
-				children: this.collectAndRenderChildren(node, catalog, childrenContainer)
+				children: this.collectAndRenderChildren(node, catalog, childrenContainer),
+				newOwnId: generateId(),
+				newReferenceId: generateId(),
+				onlyCreate: true
 			};
 
 			h3.append(cloningSelector, document.createTextNode(node.data.label));
@@ -64,73 +79,27 @@ export class CloningForm {
 	}
 
 	doCloning(eptTree, catalog, changedReferences={}) {
-		let clones = Object.keys(eptTree).map(ownId => {
-			let nodeData = eptTree[ownId];
+		let clones = Object.entries(eptTree).map(([ownId, nodeData]) => {
 			if (!nodeData.clone) return;
 
 			if (nodeData.children) {
-				// Perform bopttom-to-top cloning
+				// Perform bottom-to-top cloning
 				this.doCloning(nodeData.children, catalog, changedReferences);
 			}
-			let node = catalog[nodeData.id];
+			let node = catalog[nodeData.id || ownId];
 			if (!node) {
-				throw new Error(`Unable to find ept ID:${nodeData.id} in the catalog`);
+				console.log(nodeData, ownId, catalog);
+				throw new Error(`Unable to find EPT (ID: ${nodeData.id}, OwnID: ${ownId})`);
 			}
 
-			let isBasic = nodeData.type === policyTypes.basic;
-
-			let reference;
-			let asJSON;
-			let data = {};
-			if (isBasic) {
-				reference = node.clone(policyTypes.reference);
-				// Keeping changed references to the new EPTs
-				changedReferences[ownId] = [node.id, reference.ownId];
-				return reference;
-			} else {
-				// Full cloning for the custome EPTs +
-				// new cloned reference creation
-				let cloned = node.clone(policyTypes.clonedCustom);
-				asJSON = cloned.asJSON;
-				data = cloned.data;
-				reference = cloned.clone(policyTypes.cloned);
-				reference.id = cloned.id;
-
-				// Keeping changed references to the new EPTs
-				changedReferences[ownId] = [cloned.id, reference.ownId];
-			}
-
-			let children = nodeData.children;
-
-			// Swapping references to the newly created EPTs and references
-			if (nodeData.clone) {
-				asJSON.nodes = asJSON.nodes.map(node => {
-					if (changedReferences[node.ownId]) {
-						[node.id, node.ownId] = changedReferences[node.ownId];
-					}
-					return node;
-				});
-			}
-
-			// Updatign parameters in accordance with the new nodes ownIds.
-			// Parameter's parts should be changed start-to-end without the
-			// unchanged "holes" in the middle.
-			asJSON.parameters = Object.keys(asJSON.parameters).reduce((result, parameter) => {
-				let stop = false;
-				let name = parameter
-					.split('.')
-					.map(part => {
-						if (changedReferences[part] && !stop) {
-							return changedReferences[part][1];
-						}
-						stop = true;
-						return part;
-					})
-					.join('.');
-				result[name] = asJSON.parameters[parameter];
-				return result;
-			}, {});
-			data.parameters = asJSON.parameters;
+			let reference = node.clone(null, node.type === policyTypes.elementary ? true : changedReferences);
+			let [newOwnId, newReferenceId] = changedReferences[ownId];
+			reference.id = null;
+			reference.ownId = newReferenceId;
+			reference.isCloned = true;
+			reference.onlyCreate = !!nodeData.onlyCreate;
+			reference.data.label += ' Copy';
+			console.log('Cloning', node, 'into', reference);
 			return reference;
 		});
 		if (clones && clones.length) return clones[0];
@@ -138,6 +107,16 @@ export class CloningForm {
 
 	renderJson() {
 		this.pre0.innerText = JSON.stringify(this.eptsTree, null, 2);
+	}
+
+	getChangedReferences(eptsTree, flatten={}) {
+		Object.entries(eptsTree).forEach(([ownId, nodeData]) => {
+			if (nodeData.clone) {
+				flatten[ownId] = [nodeData.newOwnId, nodeData.newReferenceId];
+			}
+			this.getChangedReferences(nodeData.children, flatten);
+		});
+		return flatten;
 	}
 
 	render() {
@@ -161,6 +140,10 @@ export class CloningForm {
 		let cloneButton = document.createElement('button');
 		cloneButton.innerText = 'Clone';
 		cloneButton.onclick = () => {
+			console.log('EPTs tree:', this.eptsTree);
+			let [myOwnId, myReferenceId] = [generateId(), generateId()];
+			let changedReferences = this.getChangedReferences(this.eptsTree, {[this.ept.ownId]: [myOwnId, myReferenceId]});
+			console.log('Changed references:', changedReferences);
 			let clone = this.doCloning(
 				{
 					[this.ept.ownId]: {
@@ -168,10 +151,14 @@ export class CloningForm {
 	    				label: this.ept.data.label,
 						type: this.ept.type,
 					    clone: true,
-						children: this.eptsTree
+						children: this.eptsTree,
+						newOwnId: myOwnId,
+						newOwnId: myReferenceId,
+						onlyCreate: false
 					}
 				},
-				this.catalog
+				this.catalog,
+				changedReferences
 			);
 			this.callback(clone);
 			clearForm();
