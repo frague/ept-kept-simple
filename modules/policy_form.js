@@ -71,12 +71,15 @@ function gatherParameters(ept, catalog, collector={}, flatten, prefix) {
 
 export class PolicyForm {
 	fullCatalog = {};
+	isRendered = false;
+	inputs = {};
 
 	constructor(policy, callback=() => {}, isReadonly=false) {
 		this.callback = callback;
 
 		this.policy = policy;
 		this.isReadonly = isReadonly;
+		this.isRendered = false;
 
 		// Rebuild full EPTs catalog to include newly cloned ones (uncommitted)
 		this.fullCatalog = buildEptCatalog();
@@ -98,35 +101,32 @@ export class PolicyForm {
 	}
 
 	renderChildrenParameters(ownId, children, container, prevParameters) {
-		let ul = document.createElement('ul');
 		
 		Object.keys(children || {}).forEach(id => {
 			let child = children[id];
+			
+			let ul = document.createElement('ul');
+			ul.className = 'collapsed';
 
-			let li = document.createElement('li');
-			let label = document.createElement('h2');
-			label.innerText = child.label + ` (${id})`;
-			ul.appendChild(label);
 
+			let collapseLink = document.createElement('h2');
+			collapseLink.innerText = child.label + ` (${id})`;
+			collapseLink.onclick = () => {
+				let state = ul.className === 'expanded';
+				ul.className = state ? 'collapsed' : 'expanded'
+			};
+			ul.appendChild(collapseLink);
+			
+			let ownParameters = document.createElement('ol');
 			Object.entries(child.parameters || {}).forEach(([key, value]) => {
-				this._appendInput(key, value, ul);
+				this._appendInput(key, value, ownParameters);
 			});
+			ul.appendChild(ownParameters);
+
 			this.renderChildrenParameters(`${ownId}.${id}`, child.children, ul, child.parameters);
+			container.appendChild(ul);
 		});
 
-		container.appendChild(ul);
-	}
-
-	_updateParameter(input, ownerId) {
-		let {name, value} = input;
-		let ept = this.fullCatalog[ownerId];
-		if (!ept) {
-			throw new Error(`Unable to find EPT ${ownerId} in the catalog`);
-		}
-		ept.asJSON.parameters[name] = value;
-		this.applyChanges();
-		this.collectParameters();
-		this.render();
 	}
 
 	_appendInput(name, value, container) {
@@ -140,12 +140,35 @@ export class PolicyForm {
 		let input = document.createElement('input');
 		input.name = title;
 		input.value = value;
-		input.onchange = () => this._updateParameter(input, ownerId);
+		input.onkeyup = () => this._updateParameter(input, ownerId);
 
 		label.appendChild(input);
 		li.appendChild(label);
 
 		container.appendChild(li);
+
+
+		// Keep the reference to the input
+		// in order to update its value without rerendering
+		if (this.inputs[name]) {
+			this.inputs[name].push(input);
+		} else {
+			this.inputs[name] = [input];
+		}
+	}
+
+	_updateParameter(input, ownerId) {
+		let {name, value} = input;
+		let ept = this.fullCatalog[ownerId];
+		if (!ept) {
+			throw new Error(`Unable to find EPT ${ownerId} in the catalog`);
+		}
+		ept.asJSON.parameters[name] = value;
+		(this.inputs[`${ownerId}	${name}`] || [])
+			.filter(someInput => someInput !== input)
+			.forEach(someInput => someInput.value = value);
+
+		this.applyChanges();
 	}
 
 	// Updates validity status of the top level of child 
@@ -178,6 +201,7 @@ export class PolicyForm {
 	}
 
 	applyChanges() {
+		this.collectParameters();
 		this.callback(clonePolicy(this.data));
 		this.updateNodesValidity();
 		this.renderJson();
@@ -185,57 +209,63 @@ export class PolicyForm {
 
 	render() {
 		if (!placeholder) return;
-		clearForm();
-		placeholder.className = 'ept';
 
+		if (this.isRendered) {
 
-		if ([policyTypes.reference, policyTypes.basic].includes(this.policy.type)) {
-			let title = document.createElement('h1');
-			title.innerText = this.data.label;
-			placeholder.appendChild(title);
 		} else {
-			let title = document.createElement('h1');
-			title.innerText = 'Parameters';
-			placeholder.appendChild(title);
+			clearForm();
+			placeholder.className = 'ept';
 
-			let label = document.createElement('input');
-			label.id = 'label';
-			label.value = this.data.label;
-			label.onchange = () => {
-				this.data.label = label.value;
-				this.applyChanges();
-			};
-			placeholder.appendChild(label);
-		}
 
-		this.renderChildrenParameters(this.policy.ownId, this.formParameters.children, placeholder, this.formParameters.parameters);
+			if ([policyTypes.reference, policyTypes.basic].includes(this.policy.type)) {
+				let title = document.createElement('h1');
+				title.innerText = this.data.label;
+				placeholder.appendChild(title);
+			} else {
+				let title = document.createElement('h1');
+				title.innerText = 'Parameters';
+				placeholder.appendChild(title);
 
-		// let commitButton = document.createElement('button');
-		// commitButton.innerText = 'Commit Changes';
-		// commitButton.onclick = () => {
-		// 	this.callback(clonePolicy(this.data));
-		// 	this.updateNodesValidity();
-		// 	this.renderJson();
-		// };
-		// placeholder.appendChild(commitButton);
+				let label = document.createElement('input');
+				label.id = 'label';
+				label.value = this.data.label;
+				label.onkeyup = () => {
+					this.data.label = label.value;
+					this.applyChanges();
+				};
+				placeholder.appendChild(label);
+			}
 
-		let debug = document.getElementById('debug');
-		debug.innerHTML = '';
-		this.pre0 = document.createElement('pre');
-		this.pre1 = document.createElement('pre');
-		this.pre2 = document.createElement('pre');
-		this.pre3 = document.createElement('pre');
-		if (showDebug) {
-			debug.append(
-				document.createTextNode('this.data.parameters (Form data)'),
-				this.pre0, 
-				document.createTextNode('this.policy.data.parameters (Active EPT)'),
-				this.pre1, 
-				document.createTextNode('this.formParameters (Gathered on init)'),
-				this.pre2,
-				document.createTextNode('this.policy.asJSON (asJSON)'),
-				this.pre3,
-			);
+			this.renderChildrenParameters(this.policy.ownId, this.formParameters.children, placeholder, this.formParameters.parameters);
+
+			// let commitButton = document.createElement('button');
+			// commitButton.innerText = 'Commit Changes';
+			// commitButton.onclick = () => {
+			// 	this.callback(clonePolicy(this.data));
+			// 	this.updateNodesValidity();
+			// 	this.renderJson();
+			// };
+			// placeholder.appendChild(commitButton);
+
+			let debug = document.getElementById('debug');
+			debug.innerHTML = '';
+			this.pre0 = document.createElement('pre');
+			this.pre1 = document.createElement('pre');
+			this.pre2 = document.createElement('pre');
+			this.pre3 = document.createElement('pre');
+			if (showDebug) {
+				debug.append(
+					document.createTextNode('this.data.parameters (Form data)'),
+					this.pre0, 
+					document.createTextNode('this.policy.data.parameters (Active EPT)'),
+					this.pre1, 
+					document.createTextNode('this.formParameters (Gathered on init)'),
+					this.pre2,
+					document.createTextNode('this.policy.asJSON (asJSON)'),
+					this.pre3,
+				);
+			}
+			this.isRendered = true;
 		}
 		this.renderJson();
 		

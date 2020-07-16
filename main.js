@@ -7,6 +7,8 @@ import { storage } from './modules/storage.js';
 import { CloningForm } from './modules/cloning_form.js';
 import { generateId } from './modules/base.js';
 
+var paper = Raphael(330, 190, '600px', '600px');
+
 function initNewPolicy(paper) {
 	window.policy = new Policy(
 		paper, 
@@ -96,6 +98,57 @@ function randomizePosition(ept) {
 	return ept;
 }
 
+function view(ept) {
+	cleanup();
+	clearForm();
+	document.getElementById('ept-label').innerText = ept.data.label;
+	if (window.policy.type === policyTypes.new) {
+		window.policy.destructor();
+	}
+	window.policy = ept;
+	let availablePolicies = storage.get(Policy.name, []).reduce((result, ept) => {
+		result[ept.ownId] = ept;
+		return result;
+	}, {});
+
+	// Recreate nodes
+	let nodes = (ept.asJSON.nodes || []).reduce((result, data) => {
+		let p = fromJSON(data, availablePolicies);
+		p.hasErrors = p.validatePolicyParameters(p.ownId, ept.data.parameters);
+		p.render();
+		result[p.ownId] = p;
+		return result;
+	}, {});
+
+	// Recreate links between them
+	(ept.asJSON.links || []).forEach(([from, to]) => {
+		try {
+			new Link(
+				paper,
+				from ? nodes[from].output : window.inputPoint,
+				to ? nodes[to].input : window.outputPoint,
+			).render();
+		} catch (e) {
+			console.log(e);
+		}
+	});
+};
+
+function clone(ept) {
+	if (ept.type === policyTypes.elementary || !ept.asJSON.nodes.length) {
+		// Just a single EPT (no children) cloning - no confirmation needed
+		let reference = ept.clone(null, true);
+		reference.id = null;
+		reference.isCloned = true;
+		reference.onlyCreate = true;
+		reference.data.label += ' Copy';
+		randomizePosition(reference).render();
+	} else {
+		let cloningForm = new CloningForm(ept, ept => randomizePosition(ept).render());
+		cloningForm.render();
+	}
+};
+
 // Print list of EPTs stored in catalog
 function printEpts(paper) {
 	var container = document.getElementById('ept-list');
@@ -119,14 +172,7 @@ function printEpts(paper) {
 			links.append(
 				createEptLink(
 					'Clone', p, 
-					ept => {
-						let cloningForm = new CloningForm(ept, ept => {
-							// let reference = ept.clone(policyTypes.cloned);
-							// reference.id = ept.id;
-							randomizePosition(ept).render();
-						});
-						cloningForm.render();
-					}
+					clone
 				),
 
 				createEptLink(
@@ -134,41 +180,7 @@ function printEpts(paper) {
 					ept => randomizePosition(ept.referTo()).render()
 				),
 
-				createEptLink('View', p, ept => {
-					cleanup();
-					clearForm();
-					document.getElementById('ept-label').innerText = ept.data.label;
-					if (window.policy.type === policyTypes.new) {
-						window.policy.destructor();
-					}
-					window.policy = ept;
-					let availablePolicies = storage.get(Policy.name, []).reduce((result, ept) => {
-						result[ept.ownId] = ept;
-						return result;
-					}, {});
-
-					// Recreate nodes
-					let nodes = (ept.asJSON.nodes || []).reduce((result, data) => {
-						let p = fromJSON(data, availablePolicies);
-						p.hasErrors = p.validatePolicyParameters(p.ownId, ept.data.parameters);
-						p.render();
-						result[p.ownId] = p;
-						return result;
-					}, {});
-
-					// Recreate links between them
-					(ept.asJSON.links || []).forEach(([from, to]) => {
-						try {
-							new Link(
-								paper,
-								from ? nodes[from].output : window.inputPoint,
-								to ? nodes[to].input : window.outputPoint,
-							).render();
-						} catch (e) {
-							console.log(e);
-						}
-					});
-				})
+				createEptLink('View', p, view)
 			);
 
 			li.appendChild(links);
@@ -179,7 +191,6 @@ function printEpts(paper) {
 
 window.onload = () => {
 	// Initialize the canvas
-	let paper = Raphael(330, 190, '600px', '600px');
 	let canvasWidth = paper.canvas.clientWidth;
 	let canvasHeight = paper.canvas.clientHeight;
 
@@ -232,6 +243,7 @@ window.onload = () => {
 			initNewPolicy(paper);
 			clearForm();
 			printEpts(paper);
+			view(ept);
 		});
 
 	// Wipe out button
