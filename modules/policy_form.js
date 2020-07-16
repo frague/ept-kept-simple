@@ -108,7 +108,6 @@ export class PolicyForm {
 			let ul = document.createElement('ul');
 			ul.className = 'collapsed';
 
-
 			let collapseLink = document.createElement('h2');
 			collapseLink.innerText = child.label + ` (${id})`;
 			collapseLink.onclick = () => {
@@ -117,11 +116,11 @@ export class PolicyForm {
 			};
 			ul.appendChild(collapseLink);
 			
-			let ownParameters = document.createElement('ol');
+			let parametersList = document.createElement('ol');
 			Object.entries(child.parameters || {}).forEach(([key, value]) => {
-				this._appendInput(key, value, ownParameters);
+				this._appendInput(key, value, parametersList);
 			});
-			ul.appendChild(ownParameters);
+			ul.appendChild(parametersList);
 
 			this.renderChildrenParameters(`${ownId}.${id}`, child.children, ul, child.parameters);
 			container.appendChild(ul);
@@ -132,6 +131,7 @@ export class PolicyForm {
 	_appendInput(name, value, container) {
 		let li = document.createElement('li');
 		let [ownerId, title] = name.split('\t');
+		console.log('Append input', name, value, title, ownerId);
 
 		let label = document.createElement('label');
 		label.htmlFor = title;

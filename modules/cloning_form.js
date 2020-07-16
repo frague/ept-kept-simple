@@ -132,6 +132,32 @@ export class CloningForm {
 		return flatten;
 	}
 
+	cloningClicked() {
+		console.log('EPTs tree:', this.eptsTree);
+		let [myOwnId, myReferenceId] = [generateId(), generateId()];
+		let changedReferences = this.getChangedReferences(this.eptsTree, {[this.ept.ownId]: [myOwnId, myReferenceId]});
+		console.log('Changed references:', changedReferences);
+		let clone = this.doCloning(
+			{
+				[this.ept.ownId]: {
+					id: this.ept.id,
+    				label: this.ept.data.label,
+					type: this.ept.type,
+				    clone: true,
+					children: this.eptsTree,
+					newOwnId: myOwnId,
+					newOwnId: myReferenceId,
+					onlyCreate: false
+				}
+			},
+			this.catalog,
+			changedReferences
+		);
+		this.callback(clone);
+		clearForm();
+		delete this;
+	}
+
 	render() {
 		clearForm();
 		placeholder.className = 'cloning';
@@ -152,31 +178,7 @@ export class CloningForm {
 
 		let cloneButton = document.createElement('button');
 		cloneButton.innerText = 'Clone';
-		cloneButton.onclick = () => {
-			console.log('EPTs tree:', this.eptsTree);
-			let [myOwnId, myReferenceId] = [generateId(), generateId()];
-			let changedReferences = this.getChangedReferences(this.eptsTree, {[this.ept.ownId]: [myOwnId, myReferenceId]});
-			console.log('Changed references:', changedReferences);
-			let clone = this.doCloning(
-				{
-					[this.ept.ownId]: {
-						id: this.ept.id,
-	    				label: this.ept.data.label,
-						type: this.ept.type,
-					    clone: true,
-						children: this.eptsTree,
-						newOwnId: myOwnId,
-						newOwnId: myReferenceId,
-						onlyCreate: false
-					}
-				},
-				this.catalog,
-				changedReferences
-			);
-			this.callback(clone);
-			clearForm();
-			delete this;
-		};
+		cloneButton.onclick = () => this.cloningClicked();
 		placeholder.appendChild(cloneButton);
 
 		// Printing debug information

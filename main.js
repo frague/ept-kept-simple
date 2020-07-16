@@ -136,11 +136,13 @@ function view(ept) {
 function clone(ept) {
 	if (ept.type === policyTypes.elementary || !ept.asJSON.nodes.length) {
 		// Just a single EPT (no children) cloning - no confirmation needed
-		let reference = ept.clone(null, true);
-		reference.id = null;
-		reference.isCloned = true;
-		reference.onlyCreate = false;
-		reference.data.label = addVersion(reference.data.label);
+		let cloned = ept.clone(null, true);
+		cloned.id = null;
+		cloned.isCloned = true;
+		cloned.onlyCreate = true;
+		cloned.data.label = addVersion(cloned.data.label);
+
+		let reference = cloned.clone(policyTypes.reference);
 		randomizePosition(reference).render();
 	} else {
 		let cloningForm = new CloningForm(ept, ept => randomizePosition(ept).render());
@@ -282,7 +284,7 @@ window.onload = () => {
 			// 	return result;
 			// }, {})
 		};
-		clone.data.label += ' 1';
+		// clone.data.label += ' 1';
 		clone.save();
 		policyIndex++;
 	});

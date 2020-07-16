@@ -129,6 +129,7 @@ export class Policy extends Draggable {
 	save() {
 		switch (this.type) {
 			case policyTypes.new:
+			case policyTypes.reference:
 				this.type = policyTypes.custom;
 				this.id = null;
 				break;
