@@ -1,8 +1,21 @@
 import { placeholder, clearForm, buildEptCatalog } from './policy_form.js';
-import { policyTypes } from './policy.js';
+import { Policy, policyTypes } from './policy.js';
 import { generateId } from './base.js';
+import { storage } from './storage.js';
 
 const showDebug = true;
+const version = /( v\.(\d+))$/;
+
+export const addVersion = title => {
+	let titles = storage.get(Policy.name || []).map(ept => ept.data.label);
+	let newTitle = title;
+	do {
+		let match = newTitle.match(version);
+		let nextVersion = match ? match[2] : 0;
+		newTitle = `${title} v.${++nextVersion}`
+	} while (titles.includes(newTitle));
+	return newTitle;
+};
 
 export class CloningForm {
 	eptsTree = {};
@@ -98,7 +111,7 @@ export class CloningForm {
 			reference.ownId = newReferenceId;
 			reference.isCloned = true;
 			reference.onlyCreate = !!nodeData.onlyCreate;
-			reference.data.label += ' Copy';
+			reference.data.label = addVersion(reference.data.label);
 			console.log('Cloning', node, 'into', reference);
 			return reference;
 		});

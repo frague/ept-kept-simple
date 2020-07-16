@@ -4,7 +4,7 @@ import { Link } from './modules/link.js';
 import { ConnectionPoint, connectionPointTypes, radius } from './modules/connection_point.js';
 import { PolicyForm, clearForm, listKeysIn } from './modules/policy_form.js';
 import { storage } from './modules/storage.js';
-import { CloningForm } from './modules/cloning_form.js';
+import { CloningForm, addVersion } from './modules/cloning_form.js';
 import { generateId } from './modules/base.js';
 
 var paper = Raphael(330, 190, '600px', '600px');
@@ -71,7 +71,6 @@ function gatherJSON(editedEpt) {
 			}, []),
 		parameters: Object.assign({}, editedEpt.data.parameters)	// TODO: Gather own set parameters
 	};
-	console.log('toJSON', result.nodes);
 	return result;
 }
 
@@ -140,8 +139,8 @@ function clone(ept) {
 		let reference = ept.clone(null, true);
 		reference.id = null;
 		reference.isCloned = true;
-		reference.onlyCreate = true;
-		reference.data.label += ' Copy';
+		reference.onlyCreate = false;
+		reference.data.label = addVersion(reference.data.label);
 		randomizePosition(reference).render();
 	} else {
 		let cloningForm = new CloningForm(ept, ept => randomizePosition(ept).render());
@@ -177,7 +176,7 @@ function printEpts(paper) {
 
 				createEptLink(
 					'Reference', p, 
-					ept => randomizePosition(ept.referTo()).render()
+					ept => randomizePosition(ept.clone(policyTypes.reference)).render()
 				),
 
 				createEptLink('View', p, view)

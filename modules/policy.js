@@ -126,12 +126,6 @@ export class Policy extends Draggable {
 		return p;
 	}
 
-	referTo() {
-		let result = this.clone(policyTypes.reference);
-		result.id = this.ownId;
-		return result;
-	}
-
 	save() {
 		switch (this.type) {
 			case policyTypes.new:
