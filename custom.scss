@@ -88,30 +88,36 @@ section {
 					color: #888;
 				}
 
-				&.unset {
-					color: red;
+				&.error {
+					&::before {
+						content: "⚠";
+						margin-right: 4px;
+						color: red;
+					}
 				}
 
-				&.basic span:after {
+				&.basic span::after {
 					content: '(Primitive)';
 				}
 
-				&.custom span:after {
+				&.custom span::after {
 					content: '(User-defined)';
+				}
+
+				&.elementary span::after {
+					// content: '(Elementary)';
 				}
 
 				&.new {
 					color: #4F4;
-					span:after {
+					span::after {
 						content: '(New)';
 					}
 				}
 
-				&.custom-cloned {
+				&.clone {
 					text-decoration: line-through;
-					span:after {
-						content: '(Cloned)';
-					}
+					display: none;
 				}
 
 				ul li {

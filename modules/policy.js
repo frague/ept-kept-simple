@@ -1,6 +1,7 @@
 import { Draggable } from './draggable.js';
 import { ConnectionPoint, connectionPointTypes } from './connection_point.js';
 import { PolicyForm } from './policy_form.js';
+import { isEptValid } from './validator.js';
 
 const titleMaxWidth = 150;
 export const policyWidth = 150;
@@ -60,13 +61,12 @@ export class Policy extends Draggable {
 		super(position);
 		this.paper = paper;
 		this.data = clonePolicy(data);
-		this.hasErrors = this.validatePolicyParameters(); 
+		this.hasErrors = isEptValid(this.ownId); 
 		this.type = type;
 	}
 
 	destructor(keepObject=false) {
 		super.destructor();
-		this.linkedWith.forEach(linked => linked.destructor());
 		this.hide();
 		if (!keepObject) delete this;
 	}
@@ -76,6 +76,7 @@ export class Policy extends Draggable {
 			this.group.remove();
 			this.isRendered = false;
 		}
+		this.linkedWith.forEach(linked => linked.destructor());
 	}
 
 	toJSON() {
@@ -122,6 +123,7 @@ export class Policy extends Draggable {
 		}
 		p.asJSON = asJSON;
 		p.id = this.ownId;
+		p.hasErrors = this.hasErrors;
 		p.isCloned = this.isCloned;
 		return p;
 	}

@@ -6,6 +6,7 @@ import { PolicyForm, clearForm, listKeysIn } from './modules/policy_form.js';
 import { storage } from './modules/storage.js';
 import { CloningForm, addVersion } from './modules/cloning_form.js';
 import { generateId } from './modules/base.js';
+import { className } from './modules/utils.js';
 
 var paper = Raphael(330, 190, '600px', '600px');
 
@@ -113,7 +114,6 @@ function view(ept) {
 	// Recreate nodes
 	let nodes = (ept.asJSON.nodes || []).reduce((result, data) => {
 		let p = fromJSON(data, availablePolicies);
-		p.hasErrors = p.validatePolicyParameters(p.ownId, ept.data.parameters);
 		p.render();
 		result[p.ownId] = p;
 		return result;
@@ -157,30 +157,26 @@ function printEpts(paper) {
 
 	let epts = storage.get(Policy.name, []);
 	epts
-		.filter(p => ![policyTypes.new, policyTypes.basic].includes(p.type))
+		.filter(p => ![policyTypes.new, policyTypes.basic, policyTypes.reference].includes(p.type))
 		.forEach(p => {
 			let id = p.id;
 			if (p.type === policyTypes.basic) return;
 
-			let hasUnsetParams = Object.values(p.data.parameters).some(value => !value);
-
 			let li = document.createElement('li');
 			li.innerText = p.data.label;
-			li.className = p.type + (hasUnsetParams ? ' unset' : '');
+			li.className = className({
+				[p.type]: true,
+				'error': p.hasErrors,
+				'clone': p.isCloned 
+			});
 			li.appendChild(document.createElement('span'));
 
 			let links = document.createElement('ul');
 			links.append(
-				createEptLink(
-					'Clone', p, 
-					clone
-				),
-
-				createEptLink(
-					'Reference', p, 
+				createEptLink('Clone', p, clone),
+				createEptLink('Reference', p, 
 					ept => randomizePosition(ept.clone(policyTypes.reference)).render()
 				),
-
 				createEptLink('View', p, view)
 			);
 
@@ -217,6 +213,7 @@ window.onload = () => {
 			new PolicyForm(window.policy, data => {
 				window.policy.data = data;
 				document.getElementById('ept-label').innerText = data.label;
+				printEpts(paper);
 			}, false).render();
 		});
 

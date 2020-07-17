@@ -1,5 +1,6 @@
 import { clonePolicy, policyTypes, Policy } from './policy.js';
 import { storage } from './storage.js';
+import { validate } from './validator.js';
 
 export const placeholder = document.getElementById('forms');
 
@@ -140,6 +141,7 @@ export class PolicyForm {
 		let input = document.createElement('input');
 		input.name = title;
 		input.value = value;
+		// input.onchange = () => this._updateParameter(input, ownerId);
 		input.onkeyup = () => this._updateParameter(input, ownerId);
 
 		label.appendChild(input);
@@ -171,28 +173,6 @@ export class PolicyForm {
 		this.applyChanges();
 	}
 
-	// Updates validity status of the top level of child 
-	// EPTs
-	updateNodesValidity() {
-		// console.log('Update nodes validity:');
-		let children = this.formParameters.children;
-		Object.keys(children || {}).forEach(ownId => {
-			let node = this.fullCatalog[ownId];
-			if (!node) {
-				throw Error(`Unable to find node ${ownId} in the catalog`);
-			}
-			// Update each child node's parameters based on the
-			// gathered information
-			node.data.parameters = children[ownId].parameters;
-			let hasErrors = node.validatePolicyParameters(ownId, this.data.parameters);
-			// console.log('Validity:', node.ownId, !hasErrors);
-			if (hasErrors !== node.hasErrors) {
-				node.hasErrors = hasErrors;
-				node.render();
-			}
-		});
-	}
-
 	renderJson() {
 		this.pre0.innerText = JSON.stringify(this.data.parameters, null, 2);
 		this.pre1.innerText = JSON.stringify(this.policy.data.parameters, null, 2);
@@ -202,8 +182,8 @@ export class PolicyForm {
 
 	applyChanges() {
 		this.collectParameters();
+		validate();
 		this.callback(clonePolicy(this.data));
-		this.updateNodesValidity();
 		this.renderJson();
 	}
 
