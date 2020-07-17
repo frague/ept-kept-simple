@@ -6,7 +6,6 @@ export const validate = () => {
 	let catalog = buildEptCatalog();
 	Object.entries(catalog).forEach(([ownId, ept]) => {
 		let hasErrors = ept.hasErrors;
-		console.log(ept);
 		let checkedErrors = isEptValid(ept.id || ept.ownId, catalog);
 		ept.hasErrors = !checkedErrors;
 		if (hasErrors === checkedErrors && ept.isRendered) {

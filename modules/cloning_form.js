@@ -2,23 +2,30 @@ import { placeholder, clearForm, buildEptCatalog } from './policy_form.js';
 import { Policy, policyTypes } from './policy.js';
 import { generateId } from './base.js';
 import { storage } from './storage.js';
+import { className } from './utils.js';
 
-const showDebug = true;
-const version = /( v\.(\d+))$/;
+const showDebug = false;
+const version = /^(.+)( v\.(\d+))$/;
 
-export const addVersion = title => {
-	let titles = storage.get(Policy.name || []).map(ept => ept.data.label);
+export const addVersion = (title, extra=[]) => {
+	let titles = [
+		...storage.get(Policy.name || []).map(ept => ept.data.label),
+		...extra.map(([label]) => label)
+	];
 	let newTitle = title;
 	do {
 		let match = newTitle.match(version);
-		let nextVersion = match ? match[2] : 0;
-		newTitle = `${title} v.${++nextVersion}`
+		let nextVersion = match ? match[3] : 0;
+		newTitle = `${match ? match[1] : title} v.${++nextVersion}`
 	} while (titles.includes(newTitle));
 	return newTitle;
 };
 
 export class CloningForm {
 	eptsTree = {};
+	labels = {};
+	cloneButton = {};
+	myReferenceId = generateId();
 
 	constructor(ept, callback) {
 		this.ept = ept;
@@ -54,7 +61,15 @@ export class CloningForm {
 			let childrenContainer = document.createElement('ul');
 			childrenContainer.className = defaultState ? 'shown' : 'hidden';
 
-			let h3 = document.createElement('h3');
+			let div = document.createElement('div');
+
+			let newReferenceId = generateId();
+			let versioned = addVersion(node.data.label, Object.values(this.labels));
+			this.labels[newReferenceId] = [versioned, true];
+			let label = document.createElement('input');
+			label.value = defaultState ? versioned : node.data.label;
+			label.readOnly = defaultState ? '' : 'readonly';
+			label.onkeyup = () => this._updateLabel(label, newReferenceId);
 
 			let cloningSelector = document.createElement('input');
 			cloningSelector.type = 'checkbox';
@@ -68,6 +83,16 @@ export class CloningForm {
 					// If not checked all childredn cloning statuses must be reset
 					this._resetChildrenCloning(eptCloningStatus.children);
 				}
+
+				if (isChecked) {
+					label.value = addVersion(node.data.label, Object.values(this.labels));
+					this.labels[newReferenceId] = [label.value, true];
+				} else {
+					label.value = node.data.label;
+					delete this.labels[newReferenceId];
+				}
+				label.readOnly = isChecked ? '' : 'readonly';
+
 				this.renderJson();
 			};
 
@@ -79,12 +104,12 @@ export class CloningForm {
 				checkbox: cloningSelector,
 				children: this.collectAndRenderChildren(node, catalog, childrenContainer),
 				newOwnId: generateId(),
-				newReferenceId: generateId(),
+				newReferenceId,
 				onlyCreate: true
 			};
 
-			h3.append(cloningSelector, document.createTextNode(node.data.label));
-			container.append(h3, childrenContainer);
+			div.append(label, cloningSelector);
+			container.append(div, childrenContainer);
 
 			result[ownId] = eptCloningStatus;
 			return result;
@@ -111,8 +136,7 @@ export class CloningForm {
 			reference.ownId = newReferenceId;
 			reference.isCloned = true;
 			reference.onlyCreate = !!nodeData.onlyCreate;
-			reference.data.label = addVersion(reference.data.label);
-			console.log('Cloning', node, 'into', reference);
+			[reference.data.label] = this.labels[newReferenceId];
 			return reference;
 		});
 		if (clones && clones.length) return clones[0];
@@ -133,9 +157,11 @@ export class CloningForm {
 	}
 
 	cloningClicked() {
-		console.log('EPTs tree:', this.eptsTree);
-		let [myOwnId, myReferenceId] = [generateId(), generateId()];
-		let changedReferences = this.getChangedReferences(this.eptsTree, {[this.ept.ownId]: [myOwnId, myReferenceId]});
+		let myOwnId = generateId();
+		let changedReferences = this.getChangedReferences(
+			this.eptsTree, 
+			{[this.ept.ownId]: [myOwnId, this.myReferenceId]}
+		);
 		console.log('Changed references:', changedReferences);
 		let clone = this.doCloning(
 			{
@@ -146,7 +172,7 @@ export class CloningForm {
 				    clone: true,
 					children: this.eptsTree,
 					newOwnId: myOwnId,
-					newOwnId: myReferenceId,
+					newReferenceId: this.myReferenceId,
 					onlyCreate: false
 				}
 			},
@@ -158,6 +184,23 @@ export class CloningForm {
 		delete this;
 	}
 
+	_checkUniquiness(label) {
+		return ![
+			...storage.get(Policy.name || []).map(ept => ept.data.label),
+			...Object.values(this.labels).map(([label]) => label)
+		].includes(label);
+	}
+
+	_updateLabel(input, someId) {
+		console.log('Label update:', someId);
+		let { value } = input;
+		delete this.labels[someId];
+		let isLabelUnique = this._checkUniquiness(value);
+		this.labels[someId] = [value, isLabelUnique];
+		input.className = className({error: !isLabelUnique});
+		this.cloneButton.disabled = !isLabelUnique || Object.values(this.labels).some(([, state]) => !state) ? 'disabled' : '';
+	}
+
 	render() {
 		clearForm();
 		placeholder.className = 'cloning';
@@ -166,8 +209,15 @@ export class CloningForm {
 		h1.innerText = `"${this.ept.data.label}" Cloning`;
 		placeholder.appendChild(h1);
 
+		let label = document.createElement('input');
+		label.id = 'label';
+		label.value = addVersion(this.ept.data.label);
+		label.onkeyup = () => this._updateLabel(label, this.myReferenceId);
+		this.labels[this.myReferenceId] = [label.value, true];
+		placeholder.appendChild(label);
+
 		let container = document.createElement('ul');
-		let cloneHint = document.createElement('div');
+		let cloneHint = document.createElement('i');
 		cloneHint.innerText = 'Clone?';
 		container.appendChild(cloneHint);
 
@@ -176,10 +226,10 @@ export class CloningForm {
 		this.eptsTree = this.collectAndRenderChildren(this.ept, this.catalog, container);
 		placeholder.appendChild(container);
 
-		let cloneButton = document.createElement('button');
-		cloneButton.innerText = 'Clone';
-		cloneButton.onclick = () => this.cloningClicked();
-		placeholder.appendChild(cloneButton);
+		this.cloneButton = document.createElement('button');
+		this.cloneButton.innerText = 'Clone';
+		this.cloneButton.onclick = () => this.cloningClicked();
+		placeholder.appendChild(this.cloneButton);
 
 		// Printing debug information
 		let debug = document.getElementById('debug');

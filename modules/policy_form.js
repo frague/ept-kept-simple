@@ -8,7 +8,7 @@ export const clearForm = () => {
 	placeholder.innerHTML = '';
 };
 
-const showDebug = true;
+const showDebug = false;
 
 
 // @obsolete
@@ -110,7 +110,7 @@ export class PolicyForm {
 			ul.className = 'collapsed';
 
 			let collapseLink = document.createElement('h2');
-			collapseLink.innerText = child.label + ` (${id})`;
+			collapseLink.innerText = child.label;
 			collapseLink.onclick = () => {
 				let state = ul.className === 'expanded';
 				ul.className = state ? 'collapsed' : 'expanded'
@@ -132,7 +132,6 @@ export class PolicyForm {
 	_appendInput(name, value, container) {
 		let li = document.createElement('li');
 		let [ownerId, title] = name.split('\t');
-		console.log('Append input', name, value, title, ownerId);
 
 		let label = document.createElement('label');
 		label.htmlFor = title;
@@ -197,12 +196,11 @@ export class PolicyForm {
 			placeholder.className = 'ept';
 
 
+			let title = document.createElement('h1');
 			if ([policyTypes.reference, policyTypes.basic].includes(this.policy.type)) {
-				let title = document.createElement('h1');
 				title.innerText = this.data.label;
 				placeholder.appendChild(title);
 			} else {
-				let title = document.createElement('h1');
 				title.innerText = 'Parameters';
 				placeholder.appendChild(title);
 
