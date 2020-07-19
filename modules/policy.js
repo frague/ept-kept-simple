@@ -181,17 +181,6 @@ export class Policy extends Draggable {
 				.click(() => {
 					this.destructor();
 				}),
-			// this.paper.image('./images/settings.png', x + policyWidth - 13, y + 17, 10, 10)
-			// 	.attr('cursor', 'hand')
-			// 	.click(() => {
-			// 		new PolicyForm(this, data => {
-			// 			this.data = data;
-			// 			this.asJSON.parameters = data.parameters;
-			// 			this.render();
-			// 		},
-			// 		true)
-			// 			.render();
-			// 	})
 		);
 	}
 

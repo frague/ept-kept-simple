@@ -22,10 +22,10 @@ export class ConnectionPoint extends Positioned {
 	constructor(paper, position, type=connectionPointTypes.any, isStatic=false, isMulti=false, types=[]) {
 		super(position);
 		this.paper = paper;
-		this.type = type;
+		this.type = type;	// Type the point gets after linking
 		this.isStatic = isStatic;
 		this.isMulti = isMulti;
-		this.types = types;
+		this.types = types;	// Types this point can accept
 	}
 
 	destructor() {

@@ -7,8 +7,10 @@ import { storage } from './modules/storage.js';
 import { CloningForm, addVersion } from './modules/cloning_form.js';
 import { generateId } from './modules/base.js';
 import { className } from './modules/utils.js';
+import { Positioner } from './modules/positioner.js';
 
 var paper = Raphael(330, 190, '600px', '600px');
+var positioner = new Positioner();
 
 function initNewPolicy(paper) {
 	window.policy = new Policy(
@@ -48,6 +50,7 @@ var addingPosition = 0;
 // Hides all 
 function cleanup(isNew=false) {
 	addingPosition = 0;
+	positioner = new Positioner();
 	Array
 		.from(storage.get(Policy.name, []))
 		.filter(ept => !ept.isSaved)
@@ -90,12 +93,7 @@ function createEptLink(title, ept, handler) {
 }
 
 function randomizePosition(ept) {
-	let {x, y} = ept.position;
-	x = 230 + 50 * Math.sin(addingPosition);
-	y = 60 + addingPosition * (policyHeight + 34);
-	ept.position = {x, y};
-	addingPosition++;
-	return ept;
+	return positioner.position(ept);
 }
 
 function view(ept) {
@@ -143,9 +141,9 @@ function clone(ept) {
 		cloned.data.label = addVersion(cloned.data.label);
 
 		let reference = cloned.clone(policyTypes.reference);
-		randomizePosition(reference).render();
+		randomizePosition(reference);
 	} else {
-		let cloningForm = new CloningForm(ept, ept => randomizePosition(ept).render());
+		let cloningForm = new CloningForm(ept, ept => randomizePosition(ept));
 		cloningForm.render();
 	}
 };
@@ -175,7 +173,7 @@ function printEpts(paper) {
 			links.append(
 				createEptLink('Clone', p, clone),
 				createEptLink('Reference', p, 
-					ept => randomizePosition(ept.clone(policyTypes.reference)).render()
+					ept => randomizePosition(ept.clone(policyTypes.reference))
 				),
 				createEptLink('View', p, view)
 			);
