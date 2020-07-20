@@ -153,6 +153,7 @@ export class Policy extends Draggable {
 			isMulti,
 			acceptedTypes
 		);
+		point.isHidden = !acceptedTypes.length || acceptedTypes.includes(null);
 		this.group.push(point.render());
 		this.linkWith(point);
 		point.belongsTo = this.ownId;

@@ -20,7 +20,7 @@ export var basic_epts = [
 			'tagged/untagged': ''
 		},
 		'input_types': ['interface'],
-		'output_type': 'interface',
+		'output_type': null,
 	},
 	{
 		'label': 'Address type',

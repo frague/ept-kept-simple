@@ -18,6 +18,7 @@ export class ConnectionPoint extends Positioned {
 	linker = null;
 	typesList = null;
 	belongsTo = null;
+	isHidden = false;
 
 	constructor(paper, position, type=connectionPointTypes.any, isStatic=false, isMulti=false, types=[]) {
 		super(position);
@@ -70,6 +71,7 @@ export class ConnectionPoint extends Positioned {
 
 	canConnectTo(connectionPoint) {
 		if (connectionPoint !== this
+			&& !connectionPoint.isHidden
 			&& this.type !== connectionPoint.type
 			&& (connectionPoint.isMulti || !connectionPoint.isLinked())
 			&& (
@@ -82,33 +84,35 @@ export class ConnectionPoint extends Positioned {
 	}
 
 	render() {
-		if (!this.isRendered) {
-			this.group = this.paper.set();
-			this.base = this.paper.circle(this.position.x, this.position.y, radius)
-				.attr({
-					fill: '#888'
-				});
-			this.typesList = this.paper.text(
-				this.position.x + radius + 6,
-				this.position.y + (this.type === connectionPointTypes.out ? 8 : -10),
-				this.types.join(', '),
-			);
-			this.group.push(this.base, this.typesList);
+		if (!this.isHidden) {
+			if (!this.isRendered) {
+				this.group = this.paper.set();
+				this.base = this.paper.circle(this.position.x, this.position.y, radius)
+					.attr({
+						fill: '#888'
+					});
+				this.typesList = this.paper.text(
+					this.position.x + radius + 6,
+					this.position.y + (this.type === connectionPointTypes.out ? 8 : -10),
+					this.types.join(', '),
+				);
+				this.group.push(this.base, this.typesList);
 
-			if (!this.isStatic) {
-				this.linker = new Linker(this.paper, this.position, this);
-				this.group.push(this.linker.render());
+				if (!this.isStatic) {
+					this.linker = new Linker(this.paper, this.position, this);
+					this.group.push(this.linker.render());
+				}
 			}
+			this.base.attr({
+				'stroke': this.isApproached ? 'orange' : '#000',
+				'stroke-width': this.isApproached ? 2 : 1,
+				'fill': this._getColor()
+			});
+			this.typesList.attr({
+				'text': this.types.join(', '),
+				'text-anchor': 'start'
+			});
 		}
-		this.base.attr({
-			'stroke': this.isApproached ? 'orange' : '#000',
-			'stroke-width': this.isApproached ? 2 : 1,
-			'fill': this._getColor()
-		});
-		this.typesList.attr({
-			'text': this.types.join(', '),
-			'text-anchor': 'start'
-		});
 
 		super.render();
 		return this.group;
