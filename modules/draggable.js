@@ -38,5 +38,6 @@ export class Draggable extends Positioned {
 		});
 		element.entity = this;
 		element.drag(this.move, this.startDragging, this.drop);
+		this.container = element;
 	}
 }

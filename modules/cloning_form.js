@@ -55,7 +55,7 @@ export class CloningForm {
 			if (node.type === policyTypes.basic) {
 				return {};
 			} else if (node.type === policyTypes.elementary) {
-				console.log('Elementary node: ', node);
+				// console.log('Elementary node: ', node);
 			}
 
 			let childrenContainer = document.createElement('ul');
@@ -162,7 +162,7 @@ export class CloningForm {
 			this.eptsTree, 
 			{[this.ept.ownId]: [myOwnId, this.myReferenceId]}
 		);
-		console.log('Changed references:', changedReferences);
+		// console.log('Changed references:', changedReferences);
 		let clone = this.doCloning(
 			{
 				[this.ept.ownId]: {
@@ -192,7 +192,7 @@ export class CloningForm {
 	}
 
 	_updateLabel(input, someId) {
-		console.log('Label update:', someId);
+		// console.log('Label update:', someId);
 		let { value } = input;
 		delete this.labels[someId];
 		let isLabelUnique = this._checkUniquiness(value);
