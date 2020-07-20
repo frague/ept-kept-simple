@@ -1,6 +1,8 @@
 import { clonePolicy, policyTypes, Policy } from './policy.js';
 import { storage } from './storage.js';
 import { validate } from './validator.js';
+import { checkUniquiness } from './cloning_form.js';
+import { className } from './utils.js'; 
 
 export const placeholder = document.getElementById('forms');
 
@@ -172,6 +174,13 @@ export class PolicyForm {
 		this.applyChanges();
 	}
 
+	_labelIsUnique(input) {
+		let { value } = input;
+		let isLabelUnique = checkUniquiness(value);
+		input.className = className({error: !isLabelUnique});
+		return isLabelUnique;
+	}
+
 	renderJson() {
 		this.pre0.innerText = JSON.stringify(this.data.parameters, null, 2);
 		this.pre1.innerText = JSON.stringify(this.policy.data.parameters, null, 2);
@@ -208,8 +217,10 @@ export class PolicyForm {
 				label.id = 'label';
 				label.value = this.data.label;
 				label.onkeyup = () => {
-					this.data.label = label.value;
-					this.applyChanges();
+					if (label.value !== this.data.label && this._labelIsUnique(label)) {
+	 					this.data.label = label.value;
+						this.applyChanges();
+					}
 				};
 				placeholder.appendChild(label);
 			}

@@ -21,6 +21,13 @@ export const addVersion = (title, extra=[]) => {
 	return newTitle;
 };
 
+export const checkUniquiness = (label, extras={}) => {
+	return ![
+		...storage.get(Policy.name || []).map(ept => ept.data.label),
+		...Object.values(extras).map(([label]) => label)
+	].includes(label);
+}
+
 export class CloningForm {
 	eptsTree = {};
 	labels = {};
@@ -184,18 +191,11 @@ export class CloningForm {
 		delete this;
 	}
 
-	_checkUniquiness(label) {
-		return ![
-			...storage.get(Policy.name || []).map(ept => ept.data.label),
-			...Object.values(this.labels).map(([label]) => label)
-		].includes(label);
-	}
-
 	_updateLabel(input, someId) {
 		// console.log('Label update:', someId);
 		let { value } = input;
 		delete this.labels[someId];
-		let isLabelUnique = this._checkUniquiness(value);
+		let isLabelUnique = checkUniquiness(value, this.labels);
 		this.labels[someId] = [value, isLabelUnique];
 		input.className = className({error: !isLabelUnique});
 		this.cloneButton.disabled = !isLabelUnique || Object.values(this.labels).some(([, state]) => !state) ? 'disabled' : '';
