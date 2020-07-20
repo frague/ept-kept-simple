@@ -224,7 +224,7 @@ window.onload = () => {
 			let ept = window.policy;
 			Object.assign(ept.data, {
 				'input_types': input.types,
-				'output_type': output.types.length ? output.types[0] : null
+				'output_type': output.types.length && output.types[0] !== 'any' ? output.types[0] : null
 			});
 
 			ept.data = clonePolicy(new PolicyForm(ept, () => {}).data);
