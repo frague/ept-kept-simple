@@ -174,9 +174,9 @@ function printEpts(paper) {
 				createEptLink('Reference', p, 
 					ept => randomizePosition(ept.clone(policyTypes.reference))
 				),
-				createEptLink('View', p, () => {
+				createEptLink('View', p, ept => {
 					clearForm();
-					view();
+					view(ept);
 				})
 			);
 
