@@ -38,7 +38,7 @@ export class Positioner {
 		this.init();
 
 		let maxY = Math.max(...this.positions.map(p => p.y), 20);
-		ept.position = {x: 230, y: maxY + policyHeight + 40};
+		ept.position = {x: 230, y: maxY + policyHeight + 65};
 		ept.render();
 
 		this.addLink(ept);

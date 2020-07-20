@@ -9,16 +9,16 @@ body {
 }
 
 aside {
-  flex: 0 80px;
+  flex: 0 0 80px;
   background: #09293b url(images/left.png) no-repeat;
   height: 1024px;
 }
 
 article {
   flex: 1;
+  display: flex;
   background: url(images/top.png) no-repeat, url(images/top_background.png) repeat-x;
   padding: 130px 30px 0 30px;
-  display: flex;
   flex-direction: row;
 }
 
@@ -71,7 +71,7 @@ section {
 	border-width: 0;
 
 	&#epts {
-		flex: 0 200px;
+		flex: 0 0 200px;
 
 		ul {
 			padding-left: 0;
@@ -132,11 +132,11 @@ section {
 	}
 
 	&#graph {
-		flex: 0 575px;
+		flex: 0 0 575px;
 	}
 
 	&#forms {
-		flex: 0 250px;
+		flex: 0 0 250px;
 
 		ul {
 			padding-left: 0;
@@ -218,7 +218,7 @@ section {
 
 	}
 	&#debug {
-		flex: 0 300px;
+		flex: 0 0 300px;
 
 		// width: 300px;
 		// left: 1150px;
