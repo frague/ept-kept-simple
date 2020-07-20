@@ -1,3 +1,9 @@
+@use "sass:color";
+
+$red: #f34c0d;
+$green: #baf30d;
+$orange: #f38c0d;
+
 * {
 	font-family: Lato, Arial, Tahoma, Verdana;
 }
@@ -26,12 +32,6 @@ h1 {
 	padding: 0;
 	margin: 0 0 10px 0;
 	font-size: 2rem;
-	
-	&#ept-label {
-	    // position: relative;
-	    // left: 220px;
-	    // top: 2px;
-	}
 }
 
 h2 {
@@ -40,28 +40,41 @@ h2 {
 
 svg {
 	z-index: 200;
+
+	.ept {
+		fill: lighten($green, 30%);
+
+		&.error {
+			fill: lighten($red, 30%);
+		}
+	}
+
+	.connection-point {
+		fill: #888;
+
+		&.in {
+			fill: $green;
+		}
+
+		&.out {
+			fill: $red;
+		}
+
+		&.approached {
+			stroke-width: 2;
+			stroke: $orange;
+		}
+	}
+
+	.linker {
+		fill: rgba(0, 0, 0, 0.2);
+	}
+	
+	text {
+		color: black;
+	}
 }
 
-#pane {
-	position: absolute;
-	top: 0px;
-	right: 0px;
-	bottom: 0px;
-	left: 0px;
-}
-
-.epts {
-	fill: "#EFEFEF";
-}
-
-.rectangle {
-	fill: #EEE;
-	stroke: black;
-}
-
-text {
-	color: black;
-}
 
 section {
 	min-height: 600px;
@@ -92,7 +105,7 @@ section {
 					&::before {
 						content: "⚠";
 						margin-right: 4px;
-						color: red;
+						color: $red;
 					}
 				}
 
@@ -176,7 +189,7 @@ section {
 				}
 
 				&.error {
-					border-color: red;
+					border-color: $red;
 					background-color: #FFEFEF;
 				}
 			}

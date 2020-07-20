@@ -2,12 +2,10 @@ import { Positioned } from './base.js';
 import { Draggable } from './draggable.js';
 import { storage } from './storage.js';
 import { Link } from './link.js';
+import { className } from './utils.js';
 
 export const radius = 8;
-export const connectionPointTypes = {
-	'in': '#0F0',
-	'out': '#F00'
-};
+export const connectionPointTypes = { in: 'in', out: 'out' };
 
 export class ConnectionPoint extends Positioned {
 	isStatic = true;
@@ -83,14 +81,20 @@ export class ConnectionPoint extends Positioned {
 		return false;
 	}
 
+	_determineClassName() {
+		return className({
+			'connection-point': true,
+			[this.type]: true,
+			'approached': this.isApproached,
+		});
+	}
+
 	render() {
 		if (!this.isHidden) {
 			if (!this.isRendered) {
 				this.group = this.paper.set();
-				this.base = this.paper.circle(this.position.x, this.position.y, radius)
-					.attr({
-						fill: '#888'
-					});
+				this.base = this.paper.circle(this.position.x, this.position.y, radius);
+
 				this.typesList = this.paper.text(
 					this.position.x + radius + 6,
 					this.position.y + (this.type === connectionPointTypes.out ? 8 : -10),
@@ -103,11 +107,7 @@ export class ConnectionPoint extends Positioned {
 					this.group.push(this.linker.render());
 				}
 			}
-			this.base.attr({
-				'stroke': this.isApproached ? 'orange' : '#000',
-				'stroke-width': this.isApproached ? 2 : 1,
-				'fill': this._getColor()
-			});
+			this.base.node.setAttribute('class', this._determineClassName());
 			this.typesList.attr({
 				'text': this.types.join(', '),
 				'text-anchor': 'start'
@@ -154,7 +154,7 @@ class Linker extends Draggable {
 	getConnectionCandidate() {
 		this.connectionCandidate = null;
 		storage.get(ConnectionPoint.name, []).forEach(connectionPoint => {
-			if (this.starter.canConnectTo(connectionPoint) && connectionPoint.checkApproach(this.position, 30)) {
+			if (this.starter.canConnectTo(connectionPoint) && connectionPoint.checkApproach(this.position, 50)) {
 				this.connectionCandidate = connectionPoint;
 			}
 		});
@@ -182,12 +182,17 @@ class Linker extends Draggable {
 
 	onLinkChange() {}
 
+	_determineClassName() {
+		return className({
+			'linker': true,
+			[this.type]: true
+		});
+	}
+
 	render() {
 		if (!this.isRendered) {
-			this.circle = this.paper.circle(this.position.x, this.position.y, radius - 2)
-				.attr({
-					fill: 'rgba(0,0,0,0.5)'
-				});
+			this.circle = this.paper.circle(this.position.x, this.position.y, radius - 2);
+			this.circle.node.setAttribute('class', this._determineClassName());
 			this.circle.toFront();	
 			this.makeDraggable(this.circle);
 		}

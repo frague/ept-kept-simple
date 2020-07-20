@@ -2,6 +2,7 @@ import { Draggable } from './draggable.js';
 import { ConnectionPoint, connectionPointTypes } from './connection_point.js';
 import { PolicyForm } from './policy_form.js';
 import { isEptValid } from './validator.js';
+import { className } from './utils.js';
 
 const titleMaxWidth = 150;
 export const policyWidth = 150;
@@ -198,6 +199,15 @@ export class Policy extends Draggable {
     	return color;
     }
 
+    _determineClassNames() {
+    	return className({
+    		'ept': true,
+    		[this.type]: true,
+    		'error': this.hasErrors,
+    		'cloned': this.isCloned,
+    	});
+    }
+
 	render() {
 		if (!this.isRendered) {
 			let {x, y} = this.position;
@@ -205,7 +215,7 @@ export class Policy extends Draggable {
 			if (this.isCloned) {
 				let cRect = this.paper.rect(x + 4, y + 4, policyWidth, policyHeight)
 				.attr({
-			    	'fill': '#DDD',
+			    	'fill': '#AAA',
 			    	'stroke': '#000'
 				});
 				this.group.push(cRect);
@@ -222,7 +232,8 @@ export class Policy extends Draggable {
 
 			this.addExtras();
 		}
-		this.rect.attr('fill', this._determineColor());
+		// this.rect.attr('fill', this._determineColor());
+		this.rect.node.setAttribute('class', this._determineClassNames());
 		this.text.attr('text', this._splitTitle(this.data.label));
 		super.render();
 		return this.group;
