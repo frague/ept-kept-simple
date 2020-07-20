@@ -234,7 +234,6 @@ export class Policy extends Draggable {
 		}
 		this.rect.attr('fill', this._determineColor());
 		this.text.attr('text', this._splitTitle(this.data.label));
-		// this.text.attr('text', this._splitTitle(this.data.label) + `-${this.id}/${this.ownId}`);
 		super.render();
 		return this.group;
 	}

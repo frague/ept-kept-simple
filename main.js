@@ -98,7 +98,6 @@ function randomizePosition(ept) {
 
 function view(ept) {
 	cleanup();
-	clearForm();
 	document.getElementById('ept-label').innerText = ept.data.label;
 	if (window.policy.type === policyTypes.new) {
 		window.policy.destructor();
@@ -175,7 +174,10 @@ function printEpts(paper) {
 				createEptLink('Reference', p, 
 					ept => randomizePosition(ept.clone(policyTypes.reference))
 				),
-				createEptLink('View', p, view)
+				createEptLink('View', p, () => {
+					clearForm();
+					view();
+				})
 			);
 
 			li.appendChild(links);
@@ -237,7 +239,6 @@ window.onload = () => {
 			cleanup();
 
 			initNewPolicy(paper);
-			clearForm();
 			printEpts(paper);
 			view(ept);
 		});
@@ -274,12 +275,7 @@ window.onload = () => {
 				[nextId, null]
 			],
 			parameters: Object.assign({}, basicToJson.parameters)
-			// parameters: Object.entries(basicToJson.parameters).reduce((result, [key, value]) => {
-			// 	result[`${p.ownId}.${key}`] = value;
-			// 	return result;
-			// }, {})
 		};
-		// clone.data.label += ' 1';
 		clone.save();
 		policyIndex++;
 	});
