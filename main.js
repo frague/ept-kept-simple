@@ -271,11 +271,14 @@ window.onload = () => {
 				basicToJson
 			],
 			links: [
-				[null, nextId],
-				[nextId, null]
+				[null, nextId]
 			],
 			parameters: Object.assign({}, basicToJson.parameters)
 		};
+		if (data.output_types) {
+			// Only create output link if output type is not null
+			clone.asJSON.links.push([nextId, null]);
+		}
 		clone.save();
 		policyIndex++;
 	});
