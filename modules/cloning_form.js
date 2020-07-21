@@ -5,6 +5,7 @@ import { storage } from './storage.js';
 import { className } from './utils.js';
 
 const showDebug = false;
+
 const version = /^(.+)( v\.(\d+))$/;
 
 export const addVersion = (title, extra=[]) => {

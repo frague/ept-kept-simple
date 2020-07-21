@@ -103,7 +103,7 @@ section {
 				&.active {
 					background-color: lighten($green, 30%);
 
-					ul li {
+					ul li.disabled {
 						color: #888;
 						cursor: not-allowed;
 					}

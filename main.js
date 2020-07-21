@@ -87,21 +87,11 @@ function pushPolicy(ept) {
 	policyIndex++;
 }
 
-// Creates action links for the EPT (view, reference, clone)
-function createEptLink(title, ept, handler, isEnabled) {
-	let li = document.createElement('li');
-	li.innerText = title;
-	if (isEnabled) {
-		li.onclick = () => handler(ept);
-	}
-	return li;
-}
-
 function randomizePosition(ept) {
 	return positioner.position(ept);
 }
 
-function view(ept) {
+function view(ept, keepPolicyForm=false) {
 	cleanup();
 	document.getElementById('ept-label').innerText = ept.data.label;
 	if (window.policy.type === policyTypes.new) {
@@ -136,7 +126,7 @@ function view(ept) {
 			console.log(e);
 		}
 	});
-	initPolicyForm();
+	if (!keepPolicyForm) initPolicyForm();
 };
 
 function clone(ept) {
@@ -164,6 +154,18 @@ function clone(ept) {
 	}
 };
 
+// Creates action links for the EPT (view, reference, clone)
+function createEptLink(title, ept, handler, isEnabled) {
+	let li = document.createElement('li');
+	li.innerText = title;
+	if (isEnabled) {
+		li.onclick = () => handler(ept);
+	} else {
+		li.className = 'disabled';
+	}
+	return li;
+}
+
 // Print list of EPTs stored in catalog
 function printEpts() {
 	var container = document.getElementById('ept-list');
@@ -188,7 +190,6 @@ function printEpts() {
 				'clone': p.isCloned,
 				'active': isActive
 			});
-			console.log(window.policy, p);
 			li.appendChild(document.createElement('span'));
 
 			let links = document.createElement('ul');
@@ -204,7 +205,7 @@ function printEpts() {
 				createEptLink('View', p, ept => {
 					clearForm();
 					view(ept);
-				}, !isActive)
+				}, true)
 			);
 
 			li.appendChild(links);
@@ -258,7 +259,7 @@ function save() {
 		});
 
 	printEpts();
-	view(ept);
+	view(ept, true);
 	updatePolicyForm();
 }
 
@@ -303,6 +304,7 @@ window.onload = () => {
 			initNewPolicy(paper);
 			clearForm();
 			initPolicyForm();
+			printEpts();
 		});
 
 	// Instantiate and render basic policies list from data.js

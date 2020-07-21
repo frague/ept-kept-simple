@@ -10,8 +10,7 @@ export const clearForm = () => {
 	placeholder.innerHTML = '';
 };
 
-const showDebug = true;
-
+const showDebug = false;
 
 // Represents currently created EPTs as a dictionary with ownId as keys
 export const buildEptCatalog = () => {
@@ -84,7 +83,6 @@ export class PolicyForm {
 	collectParameters() {
 		// Walking the catalog in order to gather the real parameters set 
 		// on the children
-		// let flatten = {};
 		this.formParameters = {
 			label: this.policy.data.label,
 			parameters: this.policy.data.parameters,
@@ -97,14 +95,13 @@ export class PolicyForm {
 			let child = children[id];
 			
 			let ul = document.createElement('ul');
-			console.log(id);
-			ul.className = 'collapsed';
+			ul.className = this.state[id] ? 'expanded' : 'collapsed';
 
 			let collapseLink = document.createElement('h2');
 			collapseLink.innerText = child.label;
 			collapseLink.onclick = () => {
-				let state = ul.className === 'expanded';
-				ul.className = state ? 'collapsed' : 'expanded'
+				this.state[id] = !this.state[id];
+				ul.className = this.state[id] ? 'expanded' : 'collapsed';
 			};
 			ul.appendChild(collapseLink);
 			
