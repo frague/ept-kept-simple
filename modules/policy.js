@@ -55,6 +55,7 @@ export class Policy extends Draggable {
 	output = null;
 	isSaved = false;
 	isCloned = false;
+	onDestruct = () => {};
 
 	serialized = {};
 
@@ -69,6 +70,7 @@ export class Policy extends Draggable {
 	destructor(keepObject=false) {
 		super.destructor();
 		this.hide();
+		this.onDestruct();
 		if (!keepObject) delete this;
 	}
 
@@ -171,7 +173,12 @@ export class Policy extends Draggable {
 				.attr('cursor', 'hand')
 				.click(() => {
 					this.destructor();
-				}),
+						let policyForm = window.policyForm;
+						if (policyForm) {
+							policyForm.update();
+						}
+					}
+				),
 		);
 	}
 

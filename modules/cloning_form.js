@@ -186,8 +186,8 @@ export class CloningForm {
 			this.catalog,
 			changedReferences
 		);
-		this.callback(clone);
 		clearForm();
+		this.callback(clone);
 		delete this;
 	}
 
@@ -227,8 +227,19 @@ export class CloningForm {
 		placeholder.appendChild(container);
 
 		this.cloneButton = document.createElement('button');
+		this.cloneButton.className = 'positive';
 		this.cloneButton.innerText = 'Clone';
 		this.cloneButton.onclick = () => this.cloningClicked();
+
+		let cancelButton = document.createElement('button');
+		cancelButton.className = 'negative';
+		cancelButton.innerText = 'Cancel';
+		cancelButton.onclick = () => {
+			clearForm();
+			this.callback();
+			delete this;
+		};
+		placeholder.appendChild(cancelButton);
 		placeholder.appendChild(this.cloneButton);
 
 		// Printing debug information

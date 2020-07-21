@@ -69,7 +69,7 @@ export class Positioner {
 					if (
 						this._tryPlacingTo({x: 230 + kx, y: connectedTo.position.y + (policyHeight + 30) * ky}, ept)
 						|| this._tryPlacingTo({x: 230 - kx, y: connectedTo.position.y + (policyHeight + 30) * ky}, ept)
-					) return;
+					) return ept;
 				}
 			}
 		};

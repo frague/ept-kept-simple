@@ -10,26 +10,8 @@ export const clearForm = () => {
 	placeholder.innerHTML = '';
 };
 
-const showDebug = false;
+const showDebug = true;
 
-
-// @obsolete
-export const listKeysIn = (source, prefix, destination) => {
-	// Accumulating parameters top-to-bottom level
-	// in flatten key-value format. 
-	Object.keys(source).forEach(key => {
-		let pkey = `${prefix}.${key}`;
-		if (source[key]) {
-			// If a parameter has been
-			// set on the lower level - it should be removed from 
-			// the resulting set
-			delete destination[pkey];
-		} else {
-			// otherwise it should be proxied to the top
-			destination[pkey] = '';
-		}
-	});
-}
 
 // Represents currently created EPTs as a dictionary with ownId as keys
 export const buildEptCatalog = () => {
@@ -76,20 +58,27 @@ export class PolicyForm {
 	fullCatalog = {};
 	isRendered = false;
 	inputs = {};
+	state = {};
 
 	constructor(policy, callback=() => {}, isReadonly=false) {
-		this.callback = callback;
-
 		this.policy = policy;
-		this.isReadonly = isReadonly;
+		this.callback = callback;
+		this.state = {};
 		this.isRendered = false;
+		this.isReadonly = isReadonly;
+		
+		this.data = clonePolicy(this.policy.data);
+		this.data.parameters = {};//Object.assign(flatten, this.policy.data.parameters);	
 
+		this.update();
+	}
+
+	update() {
 		// Rebuild full EPTs catalog to include newly cloned ones (uncommitted)
 		this.fullCatalog = buildEptCatalog();
 		this.collectParameters();
-		
-		this.data = clonePolicy(this.policy.data);
-		this.data.parameters = {};//Object.assign(flatten, this.policy.data.parameters);
+
+		this.render();
 	}
 
 	collectParameters() {
@@ -104,7 +93,6 @@ export class PolicyForm {
 	}
 
 	renderChildrenParameters(ownId, children, container, prevParameters) {
-		
 		Object.keys(children || {}).forEach(id => {
 			let child = children[id];
 			
@@ -128,7 +116,6 @@ export class PolicyForm {
 			this.renderChildrenParameters(`${ownId}.${id}`, child.children, ul, child.parameters);
 			container.appendChild(ul);
 		});
-
 	}
 
 	_appendInput(name, value, container) {
@@ -191,7 +178,7 @@ export class PolicyForm {
 	applyChanges() {
 		this.collectParameters();
 		validate();
-		this.callback(clonePolicy(this.data));
+		this.callback(clonePolicy(this.data), false);
 		this.renderJson();
 	}
 
@@ -227,14 +214,11 @@ export class PolicyForm {
 
 			this.renderChildrenParameters(this.policy.ownId, this.formParameters.children, placeholder, this.formParameters.parameters);
 
-			// let commitButton = document.createElement('button');
-			// commitButton.innerText = 'Commit Changes';
-			// commitButton.onclick = () => {
-			// 	this.callback(clonePolicy(this.data));
-			// 	this.updateNodesValidity();
-			// 	this.renderJson();
-			// };
-			// placeholder.appendChild(commitButton);
+			let saveButton = document.createElement('button');
+			saveButton.className = 'positive';
+			saveButton.innerText = 'Save';
+			saveButton.onclick = () => this.callback({}, true);
+			placeholder.appendChild(saveButton);
 
 			let debug = document.getElementById('debug');
 			debug.innerHTML = '';
@@ -254,9 +238,9 @@ export class PolicyForm {
 					this.pre3,
 				);
 			}
-			this.isRendered = true;
+			// this.isRendered = true;
 		}
 		this.renderJson();
-		
+		return this;
 	}
 }

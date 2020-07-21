@@ -248,9 +248,21 @@ section {
 	}
 
 	button {
-		margin: 20px 0 10px 0;
+		margin: 20px 0 10px 10px;
 		float: right;
-		padding: 6px;
+		padding: 8px 25px;
+		border: 0;
+		border-radius: 4px;
+
+		&.positive {
+			color: #FFF;
+			background-color: darken($green, 10%);
+		}
+
+		&.negative {
+			color: #FFF;
+			background-color: darken($red, 10%);
+		}
 	}
 
 	div {
