@@ -88,10 +88,12 @@ function pushPolicy(ept) {
 }
 
 // Creates action links for the EPT (view, reference, clone)
-function createEptLink(title, ept, handler) {
+function createEptLink(title, ept, handler, isEnabled) {
 	let li = document.createElement('li');
 	li.innerText = title;
-	li.onclick = () => handler(ept);
+	if (isEnabled) {
+		li.onclick = () => handler(ept);
+	}
 	return li;
 }
 
@@ -106,6 +108,8 @@ function view(ept) {
 		window.policy.destructor();
 	}
 	window.policy = ept;
+	printEpts();
+
 	let availablePolicies = storage.get(Policy.name, []).reduce((result, ept) => {
 		result[ept.ownId] = ept;
 		return result;
@@ -161,9 +165,11 @@ function clone(ept) {
 };
 
 // Print list of EPTs stored in catalog
-function printEpts(paper) {
+function printEpts() {
 	var container = document.getElementById('ept-list');
 	container.innerHTML = '';
+
+	let activeOwnId = (window.policy && window.policy.ownId) || null;
 
 	let epts = storage.get(Policy.name, []);
 	epts
@@ -172,29 +178,33 @@ function printEpts(paper) {
 			let id = p.id;
 			if (p.type === policyTypes.basic) return;
 
+			let isActive = activeOwnId === p.ownId;
+
 			let li = document.createElement('li');
 			li.innerText = p.data.label;
 			li.className = className({
 				[p.type]: true,
 				'error': p.hasErrors,
-				'clone': p.isCloned 
+				'clone': p.isCloned,
+				'active': isActive
 			});
+			console.log(window.policy, p);
 			li.appendChild(document.createElement('span'));
 
 			let links = document.createElement('ul');
 			links.append(
-				createEptLink('Clone', p, clone),
+				createEptLink('Clone', p, clone, !isActive),
 				createEptLink('Reference', p, 
 					ept => {
 						let clone = randomizePosition(ept.clone(policyTypes.reference));
 						clone.onDestruct = () => updatePolicyForm();
 						updatePolicyForm();
-					}
+					}, !isActive
 				),
 				createEptLink('View', p, ept => {
 					clearForm();
 					view(ept);
-				})
+				}, !isActive)
 			);
 
 			li.appendChild(links);
@@ -213,7 +223,7 @@ function initPolicyForm() {
 			if (doSave) return save();
 			window.policy.data = data;
 			document.getElementById('ept-label').innerText = data.label;
-			printEpts(paper);
+			printEpts();
 		}, 
 		false
 	).render();	
@@ -247,10 +257,7 @@ function save() {
 			ept.hide();
 		});
 
-	// cleanup();
-
-	// initNewPolicy(paper);
-	printEpts(paper);
+	printEpts();
 	view(ept);
 	updatePolicyForm();
 }
@@ -328,7 +335,7 @@ window.onload = () => {
 		clone.save();
 		policyIndex++;
 	});
-	printEpts(paper);
+	printEpts();
 	initNewPolicy(paper);
 	initPolicyForm();
 };

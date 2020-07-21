@@ -97,6 +97,7 @@ export class PolicyForm {
 			let child = children[id];
 			
 			let ul = document.createElement('ul');
+			console.log(id);
 			ul.className = 'collapsed';
 
 			let collapseLink = document.createElement('h2');
