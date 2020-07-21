@@ -247,7 +247,7 @@ function save() {
 		'output_type': output.types.length && output.types[0] !== 'any' ? output.types[0] : null
 	});
 
-	ept.data = clonePolicy(window.policyForm.data);
+	ept.data = clonePolicy(ept.data);
 	pushPolicy(ept);
 
 	storage.get(Policy.name, [])
