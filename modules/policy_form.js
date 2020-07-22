@@ -20,13 +20,15 @@ export const buildEptCatalog = () => {
 	}, {});
 }
 
-function gatherParameters(ept, catalog, collector={}, flatten, prefix) {
+function gatherParameters(ept, catalog, collector, state) {
 	return ept.asJSON.nodes.reduce((result, {id, ownId}) => {
 		let nextId = id || ownId;
 		let node = catalog[nextId];
 		if (!node) {
 			throw new Error(`Unable to find EPT (ID: ${id}, OwnID: ${ownId})`);
 		}
+
+		if (node.hasErrors) state[ownId] = true;
 
 		if (node.type === policyTypes.basic) return {};
 
@@ -46,7 +48,7 @@ function gatherParameters(ept, catalog, collector={}, flatten, prefix) {
 			result[ownId] = {
 				label: node.data.label,
 				parameters: {},
-				children: gatherParameters(node, catalog, {}, flatten)
+				children: gatherParameters(node, catalog, {}, state)
 			};
 		}
 		return result;
@@ -86,7 +88,7 @@ export class PolicyForm {
 		this.formParameters = {
 			label: this.policy.data.label,
 			parameters: this.policy.data.parameters,
-			children: gatherParameters(this.policy, this.fullCatalog, {})
+			children: gatherParameters(this.policy, this.fullCatalog, {}, this.state)
 		};
 	}
 
@@ -127,7 +129,7 @@ export class PolicyForm {
 		let input = document.createElement('input');
 		input.name = title;
 		input.value = value;
-		// input.onchange = () => this._updateParameter(input, ownerId);
+		input.className = !value && 'empty';
 		input.onkeyup = () => this._updateParameter(input, ownerId);
 
 		label.appendChild(input);
@@ -153,8 +155,10 @@ export class PolicyForm {
 		}
 		ept.asJSON.parameters[name] = value;
 		(this.inputs[`${ownerId}	${name}`] || [])
-			.filter(someInput => someInput !== input)
-			.forEach(someInput => someInput.value = value);
+			.forEach(someInput => {
+				if (someInput !== input) someInput.value = value;
+				someInput.className = !value && 'empty';	
+			});
 
 		this.applyChanges();
 	}

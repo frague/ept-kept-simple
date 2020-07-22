@@ -204,7 +204,7 @@ section {
 					font-size: 20px;
 				}
 
-				&.error {
+				&.error, &.empty {
 					border-color: $red;
 					background-color: #FFEFEF;
 				}
