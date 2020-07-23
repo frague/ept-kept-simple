@@ -143,14 +143,43 @@ function clone(ept) {
 		randomizePosition(reference);
 		updatePolicyForm();	
 	} else {
-		let cloningForm = new CloningForm(ept, ept => {
-			if (ept) {
-				let reference = randomizePosition(ept);
-				reference.onDestruct = () => updatePolicyForm();
-			}
-			updatePolicyForm();
+		// let cloningForm = new CloningForm(ept, ept => {
+		// 	if (ept) {
+		// 		let reference = randomizePosition(ept);
+		// 		reference.onDestruct = () => updatePolicyForm();
+		// 	}
+		// 	updatePolicyForm();
+		// });
+		// cloningForm.render();
+		let availablePolicies = storage.get(Policy.name, []).reduce((result, ept) => {
+			result[ept.ownId] = ept;
+			return result;
+		}, {});
+
+
+		let newOwnIds = {};
+		ept.asJSON.nodes.forEach(json => {
+			let cloned = fromJSON(json, availablePolicies).clone();
+			newOwnIds[json.ownId] = cloned.ownId;
+			cloned.isCloned = true;
+			cloned.data.label = addVersion(cloned.data.label);
+			cloned.render();
+
+			availablePolicies[cloned.ownId] = cloned;
 		});
-		cloningForm.render();
+
+		console.log(newOwnIds);
+
+		ept.asJSON.links.forEach(([from, to]) => {
+			console.log(from, to);
+			if (!from || !to) return;
+
+			new Link(
+				paper, 
+				availablePolicies[newOwnIds[from]].output,
+				availablePolicies[newOwnIds[to]].input
+			).render();
+		});
 	}
 };
 
@@ -194,14 +223,14 @@ function printEpts() {
 
 			let links = document.createElement('ul');
 			links.append(
-				createEptLink('Clone', p, clone, !isActive),
-				createEptLink('Reference', p, 
-					ept => {
-						let clone = randomizePosition(ept.clone(policyTypes.reference));
-						clone.onDestruct = () => updatePolicyForm();
-						updatePolicyForm();
-					}, !isActive
-				),
+				createEptLink('Use', p, clone, !isActive),
+				// createEptLink('Reference', p, 
+				// 	ept => {
+				// 		let clone = randomizePosition(ept.clone(policyTypes.reference));
+				// 		clone.onDestruct = () => updatePolicyForm();
+				// 		updatePolicyForm();
+				// 	}, !isActive
+				// ),
 				createEptLink('View', p, ept => {
 					clearForm();
 					view(ept);
@@ -276,13 +305,13 @@ window.onload = () => {
 	input.onLinkChange = () => updateConnectionTypes(input);
 	input.render();
 	window.inputPoint = input;
-	paper.text(middle + radius + 5, 18, 'Input').attr('text-anchor', 'start');
+	paper.text(middle + radius + 5, 18, 'Application Point').attr('text-anchor', 'start');
 
 	let output = new ConnectionPoint(paper, {x: middle, y: canvasHeight - 20}, connectionPointTypes.in, false, true, ['any']);
 	output.onLinkChange = () => updateConnectionTypes(output);
-	output.render();
+	// output.render();
 	window.outputPoint = output;
-	paper.text(middle + radius + 5, canvasHeight - 20, 'Output').attr('text-anchor', 'start');
+	// paper.text(middle + radius + 5, canvasHeight - 20, 'Output').attr('text-anchor', 'start');
 
 	// New EPTs settings button with handler
 	// paper.image('./images/settings.png', 10, 0, 15, 15)
