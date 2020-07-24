@@ -164,10 +164,11 @@ export class PolicyForm {
 	}
 
 	_labelIsUnique(input) {
-		let { value } = input;
-		let isLabelUnique = checkUniquiness(value);
-		input.className = className({error: !isLabelUnique});
-		return isLabelUnique;
+		return true;	// No need to keep them unique
+		// let { value } = input;
+		// let isLabelUnique = checkUniquiness(value);
+		// input.className = className({error: !isLabelUnique});
+		// return isLabelUnique;
 	}
 
 	renderJson() {
@@ -195,12 +196,16 @@ export class PolicyForm {
 
 
 			let title = document.createElement('h1');
-			if ([policyTypes.reference, policyTypes.basic].includes(this.policy.type)) {
+			if ([policyTypes.basic].includes(this.policy.type)) {
 				title.innerText = this.data.label;
 				placeholder.appendChild(title);
 			} else {
-				title.innerText = 'Parameters';
+				title.innerText = 'Properties';
 				placeholder.appendChild(title);
+
+				let labelLabel = document.createElement('label');
+				labelLabel.htmlFor = 'label';
+				labelLabel.innerText = 'Title';
 
 				let label = document.createElement('input');
 				label.id = 'label';
@@ -211,7 +216,8 @@ export class PolicyForm {
 						this.applyChanges();
 					}
 				};
-				placeholder.appendChild(label);
+				labelLabel.appendChild(label);
+				placeholder.appendChild(labelLabel);
 			}
 
 			this.renderChildrenParameters(this.policy.ownId, this.formParameters.children, placeholder, this.formParameters.parameters);
@@ -219,7 +225,7 @@ export class PolicyForm {
 			let saveButton = document.createElement('button');
 			saveButton.className = 'positive';
 			saveButton.innerText = 'Save';
-			saveButton.onclick = () => this.callback({}, true);
+			saveButton.onclick = () => this.callback(this.data, true);
 			placeholder.appendChild(saveButton);
 
 			let debug = document.getElementById('debug');

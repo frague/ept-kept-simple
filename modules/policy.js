@@ -24,6 +24,13 @@ export const policyTypesColors = {
 	[policyTypes.custom]: '#888',
 };
 
+function updateTopForm() {
+	let policyForm = window.policyForm;
+	if (policyForm) {
+		policyForm.update();
+	}
+}
+
 export const clonePolicy = policy => {
 	let clonedPolicy = Object.assign({}, policy);
 	clonedPolicy.parameters = Object.assign({}, policy.parameters);
@@ -39,6 +46,7 @@ export const fromJSON = (json, availablePolicies) => {
 		result.ownId = json.ownId;
 		result.asJSON.parameters = json.parameters;
 		result.data.parameters = json.parameters;
+		result.origin = p;
 		return result;
 	} else {
 		console.log(json, availablePolicies);
@@ -169,16 +177,26 @@ export class Policy extends Draggable {
 		this.output = this.addConnectionPoint(y + policyHeight, connectionPointTypes.out, false, true, [this.data.output_type]);
 
 		this.group.push(
+			this.paper.image('./images/settings.png', x + policyWidth - 13, y + 17, 10, 10)
+	            .attr('cursor', 'hand')
+	            .click(() => {
+                    new PolicyForm(this, (data, isSaving) => {
+                    	if (isSaving) {
+                    		return updateTopForm();
+                    	}
+                        this.data.label = data.label;
+                        if (this.origin) {
+                        	this.origin.data.label = data.label;
+                        }
+                        this.render();
+                    }, true).render();
+	            }),
 			this.paper.image('./images/close.png', x + policyWidth - 12, y + 4, 8, 8)
 				.attr('cursor', 'hand')
 				.click(() => {
 					this.destructor();
-						let policyForm = window.policyForm;
-						if (policyForm) {
-							policyForm.update();
-						}
-					}
-				),
+					updateTopForm();
+				}),
 		);
 	}
 

@@ -19,7 +19,7 @@ export class Positioner {
 			.map(ept => ({...ept.position, ownId: ept.ownId}));
 	}
 
-	addLink(ept) {
+	addLink(ept, createLink=true) {
 		let connectionCandidates = this.starts
 			// Filter out impossible connections
 			.filter(point => point.canConnectTo(ept.input))
@@ -30,7 +30,7 @@ export class Positioner {
 
 		// Connect to the most relevant candidate if there are any
 		if (connectionCandidates.length) {
-			new Link(ept.paper, connectionCandidates[0], ept.input).render();
+			if (createLink) new Link(ept.paper, connectionCandidates[0], ept.input).render();
 			return connectionCandidates[0];
 		}
 		return null;
@@ -55,14 +55,14 @@ export class Positioner {
 		return false;
 	}
 
-	position(ept) {
+	position(ept, guessConnection=true) {
 		this.init();
 
 		let maxY = Math.max(...this.positions.map(p => p.y), 20);
 		ept.position = {x: 230, y: maxY + policyHeight + 65};
 		ept.render();
 
-		let connectedTo = this.addLink(ept);
+		let connectedTo = this.addLink(ept,guessConnection);
 		if (connectedTo) {
 			for (let ky = 1; ky < 2; ky++) {
 				for (let kx = 0; kx < 200; kx+=20) {

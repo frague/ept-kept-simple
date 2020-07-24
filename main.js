@@ -87,8 +87,8 @@ function pushPolicy(ept) {
 	policyIndex++;
 }
 
-function randomizePosition(ept) {
-	return positioner.position(ept);
+function randomizePosition(ept, guessConnection=true) {
+	return positioner.position(ept, guessConnection);
 }
 
 function view(ept, keepPolicyForm=false) {
@@ -129,54 +129,48 @@ function view(ept, keepPolicyForm=false) {
 	if (!keepPolicyForm) initPolicyForm();
 };
 
+function cloneOne(ept, guessConnection=true) {
+	// Just a single EPT (no children) cloning - no confirmation needed
+	let cloned = ept.clone(null, true);
+	cloned.id = null;
+	cloned.isCloned = true;
+	cloned.onlyCreate = true;
+	// cloned.data.label = addVersion(cloned.data.label);
+
+	let reference = cloned.clone(policyTypes.reference);
+	reference.origin = cloned;
+	// cloned.onDestruct = () => updatePolicyForm();
+	randomizePosition(reference, guessConnection);
+	updatePolicyForm();
+	return reference;
+}
+
 function clone(ept) {
 	if (ept.type === policyTypes.elementary || !ept.asJSON.nodes.length) {
-		// Just a single EPT (no children) cloning - no confirmation needed
-		let cloned = ept.clone(null, true);
-		cloned.id = null;
-		cloned.isCloned = true;
-		cloned.onlyCreate = true;
-		cloned.data.label = addVersion(cloned.data.label);
-
-		let reference = cloned.clone(policyTypes.reference);
-		reference.onDestruct = () => updatePolicyForm();
-		randomizePosition(reference);
-		updatePolicyForm();	
+		// // Just a single EPT (no children) cloning - no confirmation needed
+		cloneOne(ept);
 	} else {
-		// let cloningForm = new CloningForm(ept, ept => {
-		// 	if (ept) {
-		// 		let reference = randomizePosition(ept);
-		// 		reference.onDestruct = () => updatePolicyForm();
-		// 	}
-		// 	updatePolicyForm();
-		// });
-		// cloningForm.render();
 		let availablePolicies = storage.get(Policy.name, []).reduce((result, ept) => {
 			result[ept.ownId] = ept;
 			return result;
 		}, {});
 
-
 		let newOwnIds = {};
 		ept.asJSON.nodes.forEach(json => {
-			let cloned = fromJSON(json, availablePolicies).clone();
-			newOwnIds[json.ownId] = cloned.ownId;
-			cloned.isCloned = true;
-			cloned.data.label = addVersion(cloned.data.label);
-			cloned.render();
-
-			availablePolicies[cloned.ownId] = cloned;
+			let source = availablePolicies[json.id || json.ownId];
+			let reference = cloneOne(source, false);
+			newOwnIds[json.ownId] = reference.ownId;
+			availablePolicies[reference.ownId] = reference;
 		});
 
-		console.log(newOwnIds);
-
 		ept.asJSON.links.forEach(([from, to]) => {
-			console.log(from, to);
-			if (!from || !to) return;
+			let start = from ?
+				availablePolicies[newOwnIds[from]].output :
+				window.inputPoint;
 
 			new Link(
 				paper, 
-				availablePolicies[newOwnIds[from]].output,
+				start,
 				availablePolicies[newOwnIds[to]].input
 			).render();
 		});
@@ -222,20 +216,17 @@ function printEpts() {
 			li.appendChild(document.createElement('span'));
 
 			let links = document.createElement('ul');
-			links.append(
-				createEptLink('Use', p, clone, !isActive),
-				// createEptLink('Reference', p, 
-				// 	ept => {
-				// 		let clone = randomizePosition(ept.clone(policyTypes.reference));
-				// 		clone.onDestruct = () => updatePolicyForm();
-				// 		updatePolicyForm();
-				// 	}, !isActive
-				// ),
-				createEptLink('View', p, ept => {
-					clearForm();
-					view(ept);
-				}, true)
+			links.appendChild(
+				createEptLink('Use', p, clone, !isActive)
 			);
+
+			if (p.type !== policyTypes.elementary) {
+				links.appendChild(
+					createEptLink('View', p, ept => {
+						clearForm();
+						view(ept);
+					}, true));
+			}
 
 			li.appendChild(links);
 
@@ -252,6 +243,7 @@ function initPolicyForm() {
 		(data, doSave=false) => {
 			if (doSave) return save();
 			window.policy.data = data;
+            // this.asJSON.parameters = data.parameters;
 			document.getElementById('ept-label').innerText = data.label;
 			printEpts();
 		}, 
@@ -282,7 +274,6 @@ function save() {
 	storage.get(Policy.name, [])
 		.filter(ept => !ept.isSaved && ept.type !== policyTypes.reference)
 		.forEach(ept => {
-			// ept.onDestruct = () => {};
 			ept.save();
 			ept.hide();
 		});
