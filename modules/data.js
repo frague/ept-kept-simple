@@ -8,7 +8,7 @@ export var basic_epts = [
 			'vlan_id': ''
 		},
 		'input_types': ['interface'],
-		'output_type': 'interface',
+		'output_type': 'subinterface',
 		'basic': true,
 	},
 	{
@@ -30,7 +30,7 @@ export var basic_epts = [
 			'IPv4': '',
 			'IPv6': ''
 		},
-		'input_types': ['interface'],
+		'input_types': ['interface', 'subinterface'],
 		'output_type': 'routable interface',
 	},
 	{
